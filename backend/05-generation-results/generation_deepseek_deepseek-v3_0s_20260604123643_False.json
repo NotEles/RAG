@@ -1,0 +1,51 @@
+{
+  "query": "c++有哪些bug",
+  "timestamp": "2026-06-04T12:36:43.801073",
+  "provider": "deepseek",
+  "model": "deepseek-v3",
+  "response": "根据提供的上下文，这些内容主要讨论自然语言处理（NLP）模型（如大模型、LSTM、Word2Vec等），并未涉及C++编程语言的任何bug信息。因此，无法从给定上下文中回答关于C++ bugs的问题。",
+  "context": [
+    {
+      "text": "问题：基础任务如分词、词性标注、句法分析是否已经被大模型淘汰？\n回答：基础任务并没有被大模型简单淘汰，而是发生了角色重构。过去它们常作为 NLP 系统的显式中间步骤；而在大模型时代，许多应用可以通过端到端方式绕过这些模块。但这并不意味着这些任务失去价值。相反，它们在语言学研究、语料标注、系统可解释性、错误归因和高可控场景中仍发挥着重要作用。",
+      "score": 0.45232500760386374,
+      "metadata": {
+        "source": "course_qa (1).json",
+        "page": "19",
+        "chunk": "course_qa__1__json_20260604123522609015_19",
+        "total_chunks": 20,
+        "page_range": "19",
+        "embedding_provider": "huggingface",
+        "embedding_model": "BAAI/bge-small-zh-v1.5",
+        "embedding_timestamp": "2026-06-04T12:35:22.581269"
+      }
+    },
+    {
+      "text": "问题：LSTM 解决了普通 RNN 的什么问题？\n回答：LSTM 主要缓解了普通 RNN 在长距离依赖建模中的训练困难，尤其是反向传播过程中梯度逐层衰减导致的梯度消失问题。其关键创新在于引入细胞状态与门控机制，使模型可以显式控制哪些信息被写入、哪些被遗忘、哪些被输出。",
+      "score": 0.45041693343894207,
+      "metadata": {
+        "source": "course_qa (1).json",
+        "page": "10",
+        "chunk": "course_qa__1__json_20260604123522609015_10",
+        "total_chunks": 20,
+        "page_range": "10",
+        "embedding_provider": "huggingface",
+        "embedding_model": "BAAI/bge-small-zh-v1.5",
+        "embedding_timestamp": "2026-06-04T12:35:22.489587"
+      }
+    },
+    {
+      "text": "问题：Word2Vec 中 CBOW 和 Skip-gram 有什么区别？\n回答：CBOW 和 Skip-gram 的区别主要体现在目标函数与信息流向上。CBOW 将一个窗口内的上下文词表示进行聚合，再预测中心词，本质上更像由环境推断词，因此训练速度快、对高频词学习稳定；Skip-gram 则从单个中心词出发去预测多个上下文词，本质上更像由词生成环境，这使它在表示低频词和细粒度语义关系时往往更有优势。",
+      "score": 0.43467126850537197,
+      "metadata": {
+        "source": "course_qa (1).json",
+        "page": "7",
+        "chunk": "course_qa__1__json_20260604123522609015_7",
+        "total_chunks": 20,
+        "page_range": "7",
+        "embedding_provider": "huggingface",
+        "embedding_model": "BAAI/bge-small-zh-v1.5",
+        "embedding_timestamp": "2026-06-04T12:35:22.459541"
+      }
+    }
+  ]
+}

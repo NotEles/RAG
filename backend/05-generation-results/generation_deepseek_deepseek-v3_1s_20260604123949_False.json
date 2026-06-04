@@ -1,0 +1,51 @@
+{
+  "query": "词袋模型有什么特点",
+  "timestamp": "2026-06-04T12:39:49.717513",
+  "provider": "deepseek",
+  "model": "deepseek-v3",
+  "response": "根据提供的上下文，词袋模型的特点如下：\n\n词袋模型是一种典型的离散文本表示方法，其核心特点是将文本表示为基于词汇表的高维稀疏向量，只保留词项统计信息而忽略顺序结构。它的优点在于构建成本低、可解释性强、适合作为传统文本分类与检索系统的基础特征；而它的根本局限在于无法刻画语法结构、上下文依赖和语义组合关系，因此在复杂理解任务中表达能力明显不足。",
+  "context": [
+    {
+      "text": "问题：词袋模型有什么特点？\n回答：词袋模型是一种典型的离散文本表示方法，其核心特点是将文本表示为基于词汇表的高维稀疏向量，只保留词项统计信息而忽略顺序结构。它的优点在于构建成本低、可解释性强、适合作为传统文本分类与检索系统的基础特征；而它的根本局限在于无法刻画语法结构、上下文依赖和语义组合关系，因此在复杂理解任务中表达能力明显不足。",
+      "score": 0.8571399542235255,
+      "metadata": {
+        "source": "course_qa (1).json",
+        "page": "3",
+        "chunk": "course_qa__1__json_20260604123522609015_3",
+        "total_chunks": 20,
+        "page_range": "3",
+        "embedding_provider": "huggingface",
+        "embedding_model": "BAAI/bge-small-zh-v1.5",
+        "embedding_timestamp": "2026-06-04T12:35:22.417319"
+      }
+    },
+    {
+      "text": "问题：BERT 为什么被称为双向语言表示模型？\n回答：BERT 被称为双向语言表示模型，是因为它在预训练时通过掩码语言模型任务，使被预测位置能够同时利用左侧和右侧上下文来构建表示。与传统自回归语言模型只能沿单一方向建模不同，BERT 学到的是上下文敏感且双向交互的表示。",
+      "score": 0.5385775998336267,
+      "metadata": {
+        "source": "course_qa (1).json",
+        "page": "13",
+        "chunk": "course_qa__1__json_20260604123522609015_13",
+        "total_chunks": 20,
+        "page_range": "13",
+        "embedding_provider": "huggingface",
+        "embedding_model": "BAAI/bge-small-zh-v1.5",
+        "embedding_timestamp": "2026-06-04T12:35:22.521150"
+      }
+    },
+    {
+      "text": "四、使用具体代码示例及解析（以使用图像理解模型Qwen-VL\n为例） \n \n第五行image_path 表示输入给模型的图片路径。本例中图片与python 文件同\n目录。 \n \n第七行messages 是一个python 列表（list），包含多个字典（dict），每个字\n典代表对话中的一条消息。 \n其中第一个字典（system）为系统提示词（system prompt），内容为“你是一\n个图片识别助手”，目的是初始化模型的行为模式并且提供最基本的约束，即设\n定背景。 \n \n第二个字典（user）为用户提示词，其中image 路径是提供给大模型分析的图\n片，文本内容为“图中描绘的是什么？”。这代表人类用户的输入，即我们向模\n型提出的问题、请求或指令。（会让大模型回答问题）",
+      "score": 0.4797556515662349,
+      "metadata": {
+        "source": "阿里云百炼API key 申请及使用流程.pdf",
+        "page": "4",
+        "chunk": "_____API_key_________pdf_20260604123850228219_5",
+        "total_chunks": 9,
+        "page_range": "4",
+        "embedding_provider": "huggingface",
+        "embedding_model": "BAAI/bge-small-zh-v1.5",
+        "embedding_timestamp": "2026-06-04T12:38:50.169103"
+      }
+    }
+  ]
+}

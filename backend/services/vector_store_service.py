@@ -487,6 +487,46 @@ class VectorStoreService:
         # finally:
         #     connections.disconnect("default")
 
+    def add_to_named_collection(self, embeddings_data: Dict[str, Any], collection_name: str) -> Dict[str, Any]:
+        """Add embeddings to a named Chroma collection, accumulating data (no delete)."""
+        try:
+            collection = self.client.get_or_create_collection(
+                name=collection_name,
+                metadata={"hnsw:space": "cosine"},
+            )
+
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S%f")
+            filename = embeddings_data.get("filename", "doc")
+            id_prefix = re.sub(r'[^a-zA-Z0-9]', '_', filename) + f"_{timestamp}_"
+
+            entity_num = 0
+            for emb in embeddings_data["embeddings"]:
+                metadata = {
+                    "document_name": filename,
+                    "total_chunks": int(emb["metadata"].get("total_chunks", 0)),
+                    "word_count": int(emb["metadata"].get("word_count", 0)),
+                    "page_number": str(emb["metadata"].get("page_number", 0)),
+                    "page_range": str(emb["metadata"].get("page_range", "")),
+                    "embedding_provider": embeddings_data.get("embedding_provider", ""),
+                    "embedding_model": embeddings_data.get("embedding_model", ""),
+                    "embedding_timestamp": str(emb["metadata"].get("embedding_timestamp", "")),
+                }
+                unique_id = id_prefix + str(int(emb["metadata"].get("chunk_id", entity_num)))
+                collection.add(
+                    documents=[str(emb["metadata"].get("content", ""))],
+                    metadatas=[metadata],
+                    embeddings=[[float(x) for x in emb.get("embedding", [])]],
+                    ids=[unique_id],
+                )
+                entity_num += 1
+
+            logger.info(f"Added {entity_num} vectors to collection '{collection_name}'")
+            return {"index_size": entity_num, "collection_name": collection_name}
+
+        except Exception as e:
+            logger.error(f"Error adding to named collection '{collection_name}': {str(e)}")
+            raise
+
     def list_collections(self, provider: str) -> List[str]:
         """
         列出指定提供商的所有集合

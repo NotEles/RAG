@@ -1,7 +1,7 @@
 import os
 import json
 from datetime import datetime
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Body, Query, Request, Depends
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Body, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from services.loading_service import LoadingService
 from services.chunking_service import ChunkingService
@@ -16,6 +16,19 @@ import pandas as pd
 from pathlib import Path
 from services.generation_service import GenerationService
 from typing import List, Dict, Optional
+from schemas import (
+    SaveChunksRequest, SaveChunksResponse,
+    ChunkRequest,
+    EmbedRequest, EmbedResponse,
+    IndexRequest, IndexResponse,
+    SearchRequest, SearchResponse, SearchResultItem, SearchResultMeta,
+    SaveSearchRequest, SaveSearchResponse,
+    GenerateRequest, GenerateResponse,
+    ImportResponse,
+    QARequest, QAResponse,
+    CollectionInfoResponse,
+    DocumentsResponse,
+)
 
 # 设置日志
 logging.basicConfig(level=logging.INFO)
@@ -86,41 +99,22 @@ async def process_file(
         logger.error(f"Error processing file: {str(e)}")
         raise
 
-@app.post("/save")
-async def save_chunks(data: dict):
+@app.post("/save", response_model=SaveChunksResponse)
+async def save_chunks(data: SaveChunksRequest):
     try:
-        doc_name = data.get("docName")
-        chunks = data.get("chunks")
-        metadata = data.get("metadata", {})
-        
-        if not doc_name or not chunks:
-            raise ValueError("Missing required fields")
-        
-        # 构建文件名
-        filename = f"{doc_name}.json"
+        filename = f"{data.docName}.json"
         filepath = os.path.join("01-chunked-docs", filename)
-        
-        # 保存数据
         document_data = {
-            "document_name": doc_name,
-            "metadata": metadata,
-            "chunks": chunks
+            "document_name": data.docName,
+            "metadata": data.metadata,
+            "chunks": [c.model_dump() for c in data.chunks],
         }
-        
         with open(filepath, "w", encoding="utf-8") as f:
             json.dump(document_data, f, ensure_ascii=False, indent=2)
-        
-        return {
-            "status": "success",
-            "message": "Document saved successfully",
-            "filepath": filepath
-        }
+        return SaveChunksResponse(status="success", message="Document saved successfully", filepath=filepath)
     except Exception as e:
         logger.error(f"Error saving document: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/list-docs")
 async def list_documents():
@@ -141,37 +135,22 @@ async def list_documents():
         logger.error(f"Error listing documents: {str(e)}")
         raise
 
-@app.post("/embed")
-async def embed_document(data: dict = Body(...)):
+@app.post("/embed", response_model=EmbedResponse)
+async def embed_document(data: EmbedRequest):
     try:
-        doc_id = data.get("documentId")
-        provider = data.get("provider")
-        model = data.get("model")
-        
-        if not all([doc_id, provider, model]):
-            raise HTTPException(status_code=400, detail="Missing required parameters")
-            
-        # 直接使用完整文件名查找
-        loaded_path = os.path.join("01-loaded-docs", doc_id)
-        chunked_path = os.path.join("01-chunked-docs", doc_id)
-        
-        doc_path = None
-        if os.path.exists(loaded_path):
-            doc_path = loaded_path
-        elif os.path.exists(chunked_path):
-            doc_path = chunked_path
-            
+        loaded_path = os.path.join("01-loaded-docs", data.documentId)
+        chunked_path = os.path.join("01-chunked-docs", data.documentId)
+        doc_path = loaded_path if os.path.exists(loaded_path) else (
+            chunked_path if os.path.exists(chunked_path) else None
+        )
         if not doc_path:
-            raise HTTPException(status_code=404, detail=f"Document not found: {doc_id}")
-            
+            raise HTTPException(status_code=404, detail=f"Document not found: {data.documentId}")
+
         with open(doc_path, 'r', encoding='utf-8') as f:
             doc_data = json.load(f)
-        
-        # 创建 EmbeddingConfig 和 EmbeddingService
-        config = EmbeddingConfig(provider=provider, model_name=model)
+
+        config = EmbeddingConfig(provider=data.provider, model_name=data.model)
         embedding_service = EmbeddingService()
-        
-        # 准备输入数据
         input_data = {
             "chunks": doc_data["chunks"],
             "metadata": {
@@ -179,23 +158,15 @@ async def embed_document(data: dict = Body(...)):
                 "total_chunks": doc_data["total_chunks"],
                 "total_pages": doc_data["total_pages"],
                 "loading_method": doc_data["loading_method"],
-                "chunking_method": doc_data["chunking_method"]
-            }
+                "chunking_method": doc_data["chunking_method"],
+            },
         }
-        
-        # 创建嵌入 - 只接收两个返回值
         embeddings, _ = embedding_service.create_embeddings(input_data, config)
-        
-        # 保存嵌入结果
-        output_path = embedding_service.save_embeddings(doc_id, embeddings)
-        
-        return {
-            "status": "success",
-            "message": "Embeddings created successfully",
-            "filepath": output_path,
-            "embeddings": embeddings  # 添加embeddings到响应中
-        }
-        
+        output_path = embedding_service.save_embeddings(data.documentId, embeddings)
+        return EmbedResponse(status="success", message="Embeddings created successfully", filepath=output_path)
+
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error creating embeddings: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -241,31 +212,21 @@ async def list_embedded_docs():
         logger.error(f"Error listing embedded documents: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/index")
-async def index_embeddings(data: dict):
+@app.post("/index", response_model=IndexResponse)
+async def index_embeddings(data: IndexRequest):
     try:
-        file_id = data.get("fileId")
-        vector_db = data.get("vectorDb")
-        index_mode = data.get("indexMode")
-        
-        if not all([file_id, vector_db, index_mode]):
-            raise ValueError("Missing required fields")
-            
-        embedding_file = os.path.join("02-embedded-docs", file_id)
+        embedding_file = os.path.join("02-embedded-docs", data.fileId)
         if not os.path.exists(embedding_file):
-            raise FileNotFoundError(f"Embedding file not found: {file_id}")
-            
-        config = VectorDBConfig(provider=vector_db, index_mode=index_mode)
+            raise HTTPException(status_code=404, detail=f"Embedding file not found: {data.fileId}")
+        config = VectorDBConfig(provider=data.vectorDb, index_mode=data.indexMode)
         vector_store_service = VectorStoreService()
         result = vector_store_service.index_embeddings(embedding_file, config)
-        
-        return result
+        return IndexResponse(**result)
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error during indexing: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/providers")
 async def get_providers():
@@ -299,41 +260,22 @@ async def get_collections(
         )
 
 @app.post("/search")
-async def search(
-    query: str = Body(...),
-    collection_id: str = Body(...),
-    top_k: int = Body(3),
-    threshold: float = Body(0.7),
-    word_count_threshold: int = Body(100)
-):
-    """执行向量搜索"""
+async def search(data: SearchRequest):
+    """执行向量相似度检索"""
     try:
-        # Log the incoming search request details
-        logger.info(f"Search request - Query: {query}, Collection: {collection_id}, Top K: {top_k}, Threshold: {threshold}, Word Count Threshold: {word_count_threshold}")
-        
+        logger.info(f"Search request - Query: {data.query}, Collection: {data.collection_id}, Top K: {data.top_k}")
         search_service = SearchService()
-        
-        # Log before calling the search function
-        logger.info("Calling search service...")
-        
         results = await search_service.search(
-            query=query,
-            collection_id=collection_id,
-            top_k=top_k,
-            threshold=threshold,
-            word_count_threshold=word_count_threshold
+            query=data.query,
+            collection_id=data.collection_id,
+            top_k=data.top_k,
+            threshold=data.threshold,
+            word_count_threshold=data.word_count_threshold,
         )
-        
-        # Log the search results
-        logger.info(f"Search response: {results}")
-        
-        return {"results": results}
+        return results
     except Exception as e:
         logger.error(f"Error performing search: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/collections/{provider}")
 async def get_provider_collections(provider: str):
@@ -678,15 +620,15 @@ async def load_file(
         raise
 
 @app.post("/chunk")
-async def chunk_document(data: dict = Body(...)):
+async def chunk_document(data: ChunkRequest):
     try:
-        doc_id = data.get("doc_id")
-        chunking_option = data.get("chunking_option")
-        chunk_size = data.get("chunk_size", 1000)
-        
+        doc_id = data.doc_id
+        chunking_option = data.chunking_option
+        chunk_size = data.chunk_size
+
         if not doc_id or not chunking_option:
             raise HTTPException(
-                status_code=400, 
+                status_code=400,
                 detail="Missing required parameters: doc_id and chunking_option"
             )
         
@@ -875,22 +817,12 @@ async def evaluate_search(
         logger.error(f"Error during evaluation: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
     
-@app.post("/save-search")
-async def save_search_results(request: Request):
+@app.post("/save-search", response_model=SaveSearchResponse)
+async def save_search_results(data: SaveSearchRequest):
     try:
-        data = await request.json()
-        query = data.get("query")
-        collection_id = data.get("collection_id")
-        results = data.get("results")
-        
-        if not all([query, collection_id, results]):
-            raise HTTPException(status_code=400, detail="Missing required parameters")
-        
-        # 直接创建 SearchService 实例
         search_service = SearchService()
-        filepath = search_service.save_search_results(query, collection_id, results)
-        return {"saved_filepath": filepath}
-        
+        filepath = search_service.save_search_results(data.query, data.collection_id, data.results)
+        return SaveSearchResponse(saved_filepath=filepath)
     except Exception as e:
         logger.error(f"Error saving search results: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -906,26 +838,20 @@ async def get_generation_models():
         logger.error(f"Error getting generation models: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/generate")
-async def generate_response(
-    query: str = Body(...),
-    provider: str = Body(...),
-    model_name: str = Body(...),
-    search_results: List[Dict] = Body(...),
-    load_model: bool = Body(...),
-    api_key: Optional[str] = Body(None)
-):
-    """生成回答"""
+@app.post("/generate", response_model=GenerateResponse)
+async def generate_response(data: GenerateRequest):
+    """使用检索结果生成 RAG 回答"""
     try:
         result = generation_service.generate(
-            provider=provider,
-            model_name=model_name,
-            query=query,
-            search_results=search_results,
-            load_model=load_model,
-            api_key=api_key
+            provider=data.provider,
+            model_name=data.model_name,
+            query=data.query,
+            search_results=data.search_results,
+            load_model=data.load_model,
+            api_key=data.api_key,
+            show_reasoning=data.show_reasoning,
         )
-        return result
+        return GenerateResponse(**result)
     except Exception as e:
         logger.error(f"Error generating response: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -957,6 +883,247 @@ async def list_search_results():
     except Exception as e:
         logger.error(f"Error listing search results: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+def _json_item_to_text(item) -> str:
+    """Recursively convert a JSON item to a readable text string."""
+    if item is None:
+        return ""
+    if isinstance(item, (bool, int, float)):
+        return ""
+    if isinstance(item, str):
+        return item.strip()
+    if isinstance(item, list):
+        parts = [_json_item_to_text(x) for x in item]
+        return "\n".join(p for p in parts if p)
+    if isinstance(item, dict):
+        # QA format: has "question" + "answers" list
+        if "question" in item and "answers" in item:
+            q = str(item["question"]).strip()
+            answers = item["answers"]
+            if isinstance(answers, list) and answers:
+                # Use the highest-quality answer (or all if no quality field)
+                if isinstance(answers[0], dict) and "answer_quality" in answers[0]:
+                    best = max(answers, key=lambda a: a.get("answer_quality", 0))
+                    a = str(best.get("answer", "")).strip()
+                else:
+                    a = "\n".join(str(x.get("answer", x)) for x in answers if x)
+                return f"问题：{q}\n回答：{a}"
+            return f"问题：{q}"
+        # Generic dict: concatenate all non-empty string values
+        parts = []
+        for k, v in item.items():
+            if k in ("id", "chunk_id", "answer_quality"):
+                continue
+            text = _json_item_to_text(v)
+            if text:
+                parts.append(text)
+        return "\n".join(parts)
+    return str(item).strip()
+
+
+def _extract_json_items(json_data) -> list:
+    """Extract a flat list of items from arbitrary JSON for chunking."""
+    if isinstance(json_data, list):
+        return json_data
+    if isinstance(json_data, dict):
+        for v in json_data.values():
+            if isinstance(v, list) and len(v) > 0:
+                return v
+        return [json_data]
+    return [json_data]
+
+
+def _is_qa_format(json_data) -> bool:
+    """检测 JSON 是否为问答格式：dict 包含数组，数组元素有 question + answers 字段。"""
+    if not isinstance(json_data, dict):
+        return False
+    for v in json_data.values():
+        if isinstance(v, list) and len(v) > 0:
+            first = v[0]
+            if isinstance(first, dict) and "question" in first and "answers" in first:
+                return True
+    return False
+
+
+@app.post("/import-to-course", response_model=ImportResponse)
+async def import_to_course(
+    file: UploadFile = File(...),
+    loading_method: str = Form("pymupdf"),
+    chunking_method: str = Form("by_pages"),
+    chunk_size: int = Form(1000),
+    embedding_provider: str = Form("huggingface"),
+    embedding_model: str = Form("BAAI/bge-small-zh-v1.5"),
+    api_key: Optional[str] = Form(None),
+    min_quality: int = Form(0),
+):
+    """Import a PDF or JSON file directly into the 'course' Chroma collection."""
+    temp_path = os.path.join("temp", file.filename)
+    try:
+        filename = file.filename
+        is_json = filename.lower().endswith('.json')
+        is_pdf = filename.lower().endswith('.pdf')
+
+        with open(temp_path, "wb") as buffer:
+            content = await file.read()
+            buffer.write(content)
+
+        chunks = []
+
+        if is_json:
+            with open(temp_path, 'r', encoding='utf-8') as f:
+                json_data = json.load(f)
+
+            chunking_service = ChunkingService()
+
+            # Case 1: 已有标准 chunks 格式 → 直接使用
+            if isinstance(json_data, dict) and "chunks" in json_data:
+                raw_chunks = json_data["chunks"]
+                for idx, chunk in enumerate(raw_chunks):
+                    if "metadata" not in chunk:
+                        chunk["metadata"] = {}
+                    meta = chunk["metadata"]
+                    meta.setdefault("chunk_id", idx + 1)
+                    meta.setdefault("page_number", str(idx + 1))
+                    meta.setdefault("page_range", str(idx + 1))
+                    meta.setdefault("word_count", len(chunk.get("content", "").split()))
+                chunks = raw_chunks
+
+            # Case 2: QA 问答格式 → 每条 (问题, 答案) 生成一个 chunk
+            elif _is_qa_format(json_data):
+                chunk_result = chunking_service.chunk_from_json_qa(
+                    json_data, source_filename=filename, min_quality=min_quality
+                )
+                chunks = chunk_result.get("chunks", [])
+
+            # Case 3: 其他任意 JSON → 提取条目 → page_map → ChunkingService
+            else:
+                items = _extract_json_items(json_data)
+                page_map = []
+                for idx, item in enumerate(items):
+                    text = _json_item_to_text(item)
+                    if text.strip():
+                        page_map.append({"page": idx + 1, "text": text})
+
+                if not page_map:
+                    raise HTTPException(status_code=400, detail="JSON 文件中未能提取到任何文本内容。")
+
+                chunk_result = chunking_service.chunk_text(
+                    text="", method=chunking_method, metadata={
+                        "filename": filename, "loading_method": "json",
+                        "total_pages": len(page_map),
+                    },
+                    page_map=page_map, chunk_size=chunk_size,
+                )
+                chunks = chunk_result.get("chunks", [])
+
+        elif is_pdf:
+            loading_service = LoadingService()
+            loading_service.load_pdf(temp_path, loading_method)
+            total_pages = loading_service.get_total_pages()
+            page_map = loading_service.get_page_map()
+            metadata = {"filename": filename, "loading_method": loading_method, "total_pages": total_pages}
+            chunking_service = ChunkingService()
+            chunk_result = chunking_service.chunk_text(
+                text="", method=chunking_method, metadata=metadata,
+                page_map=page_map, chunk_size=chunk_size
+            )
+            chunks = chunk_result.get("chunks", [])
+        else:
+            raise HTTPException(status_code=400, detail="Unsupported file type. Please upload PDF or JSON.")
+
+        if not chunks:
+            raise HTTPException(status_code=400, detail="No chunks extracted from file.")
+
+        if api_key and embedding_provider == "openai":
+            os.environ["OPENAI_API_KEY"] = api_key
+
+        config = EmbeddingConfig(provider=embedding_provider, model_name=embedding_model)
+        embedding_service = EmbeddingService()
+        input_data = {
+            "chunks": chunks,
+            "metadata": {
+                "filename": filename,
+                "total_chunks": len(chunks),
+                "total_pages": len(chunks),
+                "loading_method": loading_method if is_pdf else "json",
+                "chunking_method": chunking_method,
+            }
+        }
+        embeddings, _ = embedding_service.create_embeddings(input_data, config)
+
+        embeddings_data = {
+            "filename": filename,
+            "embedding_provider": embedding_provider,
+            "embedding_model": embedding_model,
+            "vector_dimension": len(embeddings[0]["embedding"]) if embeddings else 0,
+            "embeddings": embeddings,
+        }
+
+        vector_store_service = VectorStoreService()
+        result = vector_store_service.add_to_named_collection(embeddings_data, "course")
+
+        os.remove(temp_path)
+        return {
+            "status": "success",
+            "message": f"Successfully imported {len(chunks)} chunks from '{filename}' into 'course' collection",
+            "chunks_imported": len(chunks),
+            "collection": "course",
+            "filename": filename,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error importing to course: {str(e)}")
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/course/info")
+async def get_course_info():
+    """Get information about the 'course' Chroma collection."""
+    try:
+        vector_store_service = VectorStoreService()
+        info = vector_store_service.get_collection_info("chroma", "course")
+        return info
+    except Exception as e:
+        logger.warning(f"Course collection not found or empty: {str(e)}")
+        return {"name": "course", "num_entities": 0, "schema": {}}
+
+
+@app.post("/qa", response_model=QAResponse)
+async def qa_endpoint(data: QARequest):
+    """在指定 collection 中检索，并用 RAG 生成回答"""
+    try:
+        search_service = SearchService()
+        search_response = await search_service.search(
+            query=data.query,
+            collection_id=data.collection,
+            top_k=data.top_k,
+            threshold=data.threshold,
+            word_count_threshold=data.word_count_threshold,
+        )
+        search_results = search_response.get("results", [])
+
+        result = generation_service.generate(
+            provider=data.provider,
+            model_name=data.model_name,
+            query=data.query,
+            search_results=search_results,
+            load_model=False,
+            api_key=data.api_key,
+            show_reasoning=data.show_reasoning,
+        )
+        return QAResponse(
+            query=data.query,
+            search_results=search_results,
+            response=result["response"],
+        )
+    except Exception as e:
+        logger.error(f"Error in QA endpoint: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/search-results/{file_id}")
 async def get_search_result(file_id: str):

@@ -9,6 +9,8 @@ import Indexing from './pages/Indexing';
 import Search from './pages/Search';
 import ParseFile from './pages/ParseFile';
 import Generation from './pages/Generation';
+import ImportCourse from './pages/ImportCourse';
+import QA from './pages/QA';
 
 const App = () => {
   return (
@@ -17,14 +19,16 @@ const App = () => {
         <Sidebar />
         <main className="ml-64 flex-1 min-h-screen bg-gray-100">
           <Routes>
-            <Route path="/load-file" element={<LoadFile />} />  
-            <Route path="/chunk-file" element={<ChunkFile />} />  
+            <Route path="/load-file" element={<LoadFile />} />
+            <Route path="/chunk-file" element={<ChunkFile />} />
             <Route path="/parse-file" element={<ParseFile />} />
             <Route path="/embedding" element={<EmbeddingFile />} />
             <Route path="/indexing" element={<Indexing />} />
             <Route path="/search" element={<Search />} />
             <Route path="/generation" element={<Generation />} />
-            <Route path="/" element={<LoadFile />} />
+            <Route path="/import" element={<ImportCourse />} />
+            <Route path="/qa" element={<QA />} />
+            <Route path="/" element={<ImportCourse />} />
           </Routes>
         </main>
       </div>

@@ -1,0 +1,51 @@
+{
+  "query": "什么是自然语言处理",
+  "timestamp": "2026-06-04T12:51:18.908807",
+  "provider": "deepseek",
+  "model": "deepseek-v3",
+  "response": "根据提供的上下文，自然语言处理是面向人类语言的计算建模与应用技术，核心目标是让机器能够对文本或语音中的语言信息进行有效表示、理解和生成，并服务于检索、翻译、对话和摘要等实际任务。它也是研究如何用计算方法对人类语言进行建模、分析、理解与生成的交叉学科，常见任务包括分词、翻译和问答。",
+  "context": [
+    {
+      "text": "问题：什么是自然语言处理？\n回答：自然语言处理是面向人类语言的计算建模与应用技术，核心目标是让机器能够对文本或语音中的语言信息进行有效表示、理解和生成，并服务于检索、翻译、对话和摘要等实际任务。",
+      "score": 0.8383679986000061,
+      "metadata": {
+        "source": "course_qa (1).json",
+        "page": "1",
+        "chunk": "course_qa__1__json_20260604125057954620_5",
+        "total_chunks": 720,
+        "page_range": "1",
+        "embedding_provider": "huggingface",
+        "embedding_model": "BAAI/bge-small-zh-v1.5",
+        "embedding_timestamp": "2026-06-04T12:50:51.600654"
+      }
+    },
+    {
+      "text": "问题：什么是自然语言处理？\n回答：自然语言处理是让计算机对人类语言进行分析和操作的技术，常见任务包括分词、翻译和问答。",
+      "score": 0.8334223628044128,
+      "metadata": {
+        "source": "course_qa (1).json",
+        "page": "1",
+        "chunk": "course_qa__1__json_20260604125057954620_1",
+        "total_chunks": 720,
+        "page_range": "1",
+        "embedding_provider": "huggingface",
+        "embedding_model": "BAAI/bge-small-zh-v1.5",
+        "embedding_timestamp": "2026-06-04T12:50:51.542625"
+      }
+    },
+    {
+      "text": "问题：什么是自然语言处理？\n回答：自然语言处理是研究如何用计算方法对人类语言进行建模、分析、理解与生成的交叉学科。它既关注语言数据的表示学习，也关注在具体任务中实现可靠的语义处理能力，因此在理论上涉及语言规律建模，在应用上广泛服务于搜索、翻译、问答、信息抽取和智能助手等系统。",
+      "score": 0.8290199041366577,
+      "metadata": {
+        "source": "course_qa (1).json",
+        "page": "1",
+        "chunk": "course_qa__1__json_20260604125057954620_6",
+        "total_chunks": 720,
+        "page_range": "1",
+        "embedding_provider": "huggingface",
+        "embedding_model": "BAAI/bge-small-zh-v1.5",
+        "embedding_timestamp": "2026-06-04T12:50:51.615762"
+      }
+    }
+  ]
+}

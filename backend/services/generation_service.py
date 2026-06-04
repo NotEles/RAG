@@ -40,9 +40,14 @@ class GenerationService:
                 "DeepSeek-R1-Distill-Qwen": "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
                 "Qwen-Qwen3-1.7B": "Qwen/Qwen3-1.7B",
             },
+            "openai": {
+                "gpt-4o": "gpt-4o",
+                "gpt-4o-mini": "gpt-4o-mini",
+                "gpt-3.5-turbo": "gpt-3.5-turbo",
+            },
             "aliyun": {
                 "qwen-turbo": "qwen-turbo",
-                "qwen3.6-plus": "qwen3.6-plus",
+                "qwen-plus": "qwen-plus",
             },
             "deepseek": {
                 "deepseek-v3": "deepseek-chat",
@@ -172,6 +177,32 @@ AI回复：{responseInfo}
             logger.error(f"Error generating with HuggingFace: {str(e)}")
             raise
 
+    def _generate_with_openai(
+            self,
+            model_name: str,
+            query: str,
+            context: str,
+            api_key: Optional[str] = None
+    ) -> str:
+        try:
+            if not api_key:
+                api_key = os.getenv("OPENAI_API_KEY")
+                if not api_key:
+                    raise ValueError("OpenAI API key not provided")
+            client = OpenAI(api_key=api_key)
+            messages = [
+                {"role": "system", "content": "You are a helpful assistant. Use the provided context to answer the question."},
+                {"role": "user", "content": f"Context: {context}\n\nQuestion: {query}"}
+            ]
+            response = client.chat.completions.create(
+                model=self.models["openai"][model_name],
+                messages=messages,
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            logger.error(f"Error generating with OpenAI: {str(e)}")
+            raise
+
     def _generate_with_aliyun(
             self,
             model_name: str,
@@ -192,10 +223,10 @@ AI回复：{responseInfo}
             生成的回答文本
         """
         try:
-            # 初始化OpenAI客户端
+            if not api_key:
+                api_key = os.getenv("DASHSCOPE_API_KEY")
             client = OpenAI(
-                # 如果没有配置环境变量，请用阿里云百炼API Key替换：api_key="sk-xxx"
-                api_key=os.getenv("DASHSCOPE_API_KEY"),
+                api_key=api_key,
                 base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
             )
 
@@ -346,6 +377,8 @@ AI回复：{responseInfo}
             # 根据不同提供商生成回答
             if provider == "huggingface":
                 response = self._generate_with_huggingface(model_name, query, context, load_model)
+            elif provider == "openai":
+                response = self._generate_with_openai(model_name, query, context, api_key)
             elif provider == "aliyun":
                 response = self._generate_with_aliyun(model_name, query, context, api_key)
             elif provider == "deepseek":

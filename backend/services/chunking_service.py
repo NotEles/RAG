@@ -207,10 +207,10 @@ class ChunkingService:
     def _sentence_chunks(self, text: str) -> list[dict]:
         """
         将文本按句子分块
-        
+
         Args:
             text: 要分块的文本
-            
+
         Returns:
             分块后的句子列表
         """
@@ -221,3 +221,90 @@ class ChunkingService:
         )
         texts = splitter.split_text(text)
         return [{"text": t} for t in texts]
+
+    def chunk_from_json_qa(
+        self,
+        data: dict,
+        source_filename: str = "course_qa.json",
+        min_quality: int = 0,
+    ) -> dict:
+        """
+        将课程问答 JSON 转换为标准 chunk 格式。
+        每个 (问题, 答案) 对生成一个独立 chunk，保留所有质量 >= min_quality 的答案。
+
+        期望的 JSON 结构：
+        {
+            "课程主题名": [
+                {
+                    "id": 1,
+                    "question": "问题文本",
+                    "answers": [
+                        {"answer_quality": 0, "answer": "..."},
+                        {"answer_quality": 9, "answer": "..."},
+                        ...
+                    ]
+                },
+                ...
+            ]
+        }
+
+        Args:
+            data: 已解析的 JSON 数据字典
+            source_filename: 源文件名
+            min_quality: 过滤低质量答案的最低分（0 = 保留全部）
+
+        Returns:
+            与 chunk_text 格式一致的标准文档数据结构
+        """
+        try:
+            chunks = []
+
+            for topic, qa_list in data.items():
+                if not isinstance(qa_list, list):
+                    logger.warning(f"Skipping non-list value for topic: {topic}")
+                    continue
+
+                for qa_item in qa_list:
+                    question = str(qa_item.get("question", "")).strip()
+                    question_id = qa_item.get("id", 0)
+                    answers = qa_item.get("answers", [])
+
+                    if not question or not answers:
+                        continue
+
+                    for ans in answers:
+                        quality = ans.get("answer_quality", 0) if isinstance(ans, dict) else 0
+                        if quality < min_quality:
+                            continue
+                        answer_text = str(ans.get("answer", "") if isinstance(ans, dict) else ans).strip()
+                        if not answer_text:
+                            continue
+
+                        content = f"问题：{question}\n回答：{answer_text}"
+                        chunks.append({
+                            "content": content,
+                            "metadata": {
+                                "chunk_id": len(chunks) + 1,
+                                "page_number": str(question_id),
+                                "page_range": str(question_id),
+                                "word_count": len(content.split()),
+                                "topic": topic,
+                                "question_id": question_id,
+                                "question": question,
+                                "answer_quality": quality,
+                            }
+                        })
+
+            return {
+                "filename": source_filename,
+                "total_chunks": len(chunks),
+                "total_pages": len(data),
+                "loading_method": "json",
+                "chunking_method": "by_qa",
+                "timestamp": datetime.now().isoformat(),
+                "chunks": chunks,
+            }
+
+        except Exception as e:
+            logger.error(f"Error in chunk_from_json_qa: {str(e)}")
+            raise

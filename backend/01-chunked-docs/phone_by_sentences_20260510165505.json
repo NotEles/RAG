@@ -1,0 +1,19 @@
+{
+  "filename": "phone_info.pdf",
+  "total_chunks": 1,
+  "total_pages": 1,
+  "loading_method": "pymupdf",
+  "chunking_method": "by_sentences",
+  "timestamp": "2026-05-10T16:55:05.336991",
+  "chunks": [
+    {
+      "content": "小麦Pro手机参数简览:·\n系统:安卓最新版本\n处理器:高性能八核处理器\n显示屏:6.7英寸AMOLED全面屏，2K分辨率\n后置摄像头∶主摄像头6400万像紊，四摄系统\n前置摄像头∶3200万像素，Al美颜、HDR功能\n内存与存储︰最高可选12GB运行内存，最高512GB存储空间\n电池: 5000mAh大容量电池，支持快速充电\n网络:支持5G网络，Wi-Fi 6，蓝牙5.2\n其他特性:IP68防水防尘，面部识别和指纹识别解锁\n小麦Pro以其强大的性能、清晰的显示效果、出色的摄像能力以及长久续航等特点，为用户提供优质\n的手机体验。\n苹果 iPhone 17参数简览:·\n屏幕：6.3英寸，刷新率120Hz，分辨率FHD+\n系统：iOS\nSIM卡：2个，类型Nano SIM\n5G网络：支持5G\n存储卡：不支持\n机身内存：256GB\n充电：无线充电，充电功率40W\n生物识别：人脸识别\n拍照特色：杜比视界\n前摄主像素：1800万像素\n后摄主像素：4800万像素\n屏幕材质：OLED全面屏\nCPU型号：A19\n小米REDMI Note14参数简览:·\n屏幕：德国莱茵护眼，刷新率120Hz，6.67英寸，分辨率FHD+，OLED直屏\n系统：小米澎湃os\nSIM卡：2个\n网络：4G TD-LTE 4G FDD-LTE，支持5G\n机身内存：128GB\n运行内存：8GB\n充电：不支持无线充电，充电功率45W\n电池容量：5110mAh(typ)\n生物识别：屏幕指纹，人脸识别\n前摄主像素：1600万像素\n后摄主像素：5000万像素\n拍照特色：光学防抖\nCPU型号：天玑7025-Ultra",
+      "metadata": {
+        "chunk_id": 1,
+        "page_number": 1,
+        "page_range": "1",
+        "word_count": 49
+      }
+    }
+  ]
+}

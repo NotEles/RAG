@@ -1,0 +1,55 @@
+{
+  "filename": "20250802-Python包管理器“uv”安装及使用教程_uv 安装包-CSDN博客.pdf",
+  "total_chunks": 5,
+  "total_pages": 5,
+  "loading_method": "pymupdf",
+  "chunking_method": "by_pages",
+  "timestamp": "2026-05-08T17:09:21.956918",
+  "chunks": [
+    {
+      "content": "20250802-Python包管理器“uv”安装及使用教程\n本文章已经生成可运行项目，一键运行\n原创\n· 1k 阅读·\n9 ·\n 5\n·\n文章标签：#python\n#uv\n#开发语言\n#pip\n#vscode\n于 2025-08-02 11:27:24 发布\nCC 4.0 BY-SA版权\nPython\n包管理器“uv”安装及使用教程\n作者：沐洋\n校对：Dreamstar\n1.uv\n简介\n🌟 uv 是什么？\n想象你玩积木时：\n传统 pip 像一个人慢悠悠找积木，一块一块拿，还经常拿错颜色；\nuv 像一群机器人帮你找积木，瞬间按图纸配齐，还能自动避开不匹配的积木；\n本质：一个超快的 Python 包\n安装工具，用 Rust 编写（速度比 pip\n 快 10 倍以上）\n🛠 uv 能帮你做什么？\n秒装软件包\n一键建虚拟环境\n# 以前（pip)\npip install numpy  #等半天\n# 现在（uv)\nuv pip install numpy  #唰一下就好了\n运行本项目\nbash\n1\n2\n3\n4\n5\npython 专栏收录该内容\n2 篇文章\n订阅专栏\n复制\n繁星之歌~\n专栏目录\n关注\n9\n5\n0\n分享",
+      "metadata": {
+        "chunk_id": 1,
+        "page_number": 1,
+        "page_range": "1",
+        "word_count": 85
+      }
+    },
+    {
+      "content": "解决依赖冲突\n比如同时装 pandas 和 tensorflow 时，pip 经常报错，uv 能智能避开版本冲突。\n2.安装方法（适用于Windows\n)\n注意：建议将所有方法大致浏览完之后，根据自身情况决定具体的安装方式。\n法一：使用powershell\n一键安装\nPS：PowerShell 是 Windows 的“万能遥控器”，一句话就能让电脑自动干活。\n步骤1：打开Win+R，输入powershell，回车；\n或者开始菜单搜Powershell/Windows Terminal\n步骤2：打开powershell后复制以下命令：\n脚本将自动完成以下操作：\n1. 下载预构建的 uv 可执行文件；\n2. 将可执行文件放入用户目录之下（如：C:\\Users\\你的用户名\\.cargo\\bin ）；\n3. 尝试自动添加环境变量；\n步骤3：验证是否安装成功，关闭并重新打开命令行，输入\n输出示例：\n# 创建虚拟环境\nuv venv (your name)  \n# 激活\n(your name)\\Scripts\\activate\n运行本项目\nbash\n1\n2\n3\n4\npowershell -ExecutionPolicy Bypass -c \"irm https://github.com/astral-sh/uv/releases/download/0.7.12/uv-installer.ps1 | iex\"\n运行本项目\npowershell\n1\nuv --version\n运行本项目\npowershell\n1\n复制\n复制\n复制\n繁星之歌~\n专栏目录\n关注\n9\n5\n0\n分享",
+      "metadata": {
+        "chunk_id": 2,
+        "page_number": 2,
+        "page_range": "2",
+        "word_count": 75
+      }
+    },
+    {
+      "content": "uv 0.7.12\n法二：手动下载安装包\n步骤1：访问下载地址：https://github.com/astral-sh/uv/releases/latest\n步骤2：找到平台对应的版本。例如，Windows64位可下载“uv-x86.64-pc-windows-msvc.zip”\n步骤3：解压后会得到一个uv.exe文件\n步骤4：将uv.exe放入某个路径，将该路径地址复制，加入系统环境变量Path中，可使用以下两种方式：\n1. 可将路径加入“用户级PATH”（一次永久生效）\nWin+S，输入“环境变量”，回车；\n点“环境变量”，上半部分的“用户变量”，里面找到Path，“编辑”，“新建”，将路径贴进去，一路确定；\n重新打开Powershell，输入命令uv --version ，查看是否显示版本，显示则证明成功。\n2. 一行命令法（Powersell)\n步骤5：再次验证是否安装成功\n输出示例：\nCommandType\nName\nVersion\nSource\nApplication\nuv.exe\n0.0.0.0\nC:\\Users\\Administrator.local\\bin\\uv.exe\n$binDir = \"$env:USERPROFILE\\.local\\bin\"\n::SetEnvironmentVariable(\n\"Path\",\n::GetEnvironmentVariable(\"Path\", \"User\") + \";\" + $binDir,\n\"User\"\n)\n[Environment]\n[Environment]\n运行本项目\npowershell\n1\n2\n3\n4\n5\n6\nGet-Command uv\n运行本项目\npowershell\n1\n复制\n复制\n繁星之歌~\n专栏目录\n关注\n9\n5\n0\n分享",
+      "metadata": {
+        "chunk_id": 3,
+        "page_number": 3,
+        "page_range": "3",
+        "word_count": 63
+      }
+    },
+    {
+      "content": "{ 前两种方法容易遇到的问题：国内网络阻断导致 GitHub 下载失败，镜像被墙。}\n解决方法：推荐使用手动离线包\n步骤1：浏览器打开镜像直链（无需翻墙）\nhttps://ghfast.top/https://github.com/astral-sh/uv/releases/download/0.7.12/uv-x86_64-pc-windows-msvc.zip\n注意：这里的链接中有版本号，使用时，记得根据自己的实际需求进行修改。“https://ghfast.top/” 提供了github资源下载的镜像直链。\n步骤2：下载后解压，得到uv.exe\n步骤3：把uv.exe放进系统PATH（2行命令）\n步骤4：重开Powershell，执行\n法三：用包管理器（不推荐）\n1.Scoop\n2.Chocolatey\n3.pip\n$binDir = \"$env:USERPROFILE\\.local\\bin\"\nif (!(Test-Path $binDir)) { New-Item -ItemType Directory -Path $binDir }\nMove-Item -Path \".\\uv.exe\" -Destination \"$binDir\\uv.exe\"\n::SetEnvironmentVariable(\"Path\", $env:Path + \";$binDir\", \n::User)\n[Environment]\n[EnvironmentVariableTarget]\n运行本项目\npowershell\n1\n2\n3\n4\nuv --version\n运行本项目\npowershell\n1\nscoop install uv\n运行本项目\npowershell\n1\nchoco install uv\n运行本项目\npowershell\n1\npip install uv\n运行本项目\nbash\n1\n复制\n复制\n复制\n复制\n复制\n繁星之歌~\n专栏目录\n关注\n9\n5\n0\n分享",
+      "metadata": {
+        "chunk_id": 4,
+        "page_number": 4,
+        "page_range": "4",
+        "word_count": 82
+      }
+    },
+    {
+      "content": "该方法的弊端：该方法会在当前python解释器里把uv当做一个普通安装包，但官方不推荐是因为pip安装完成以后，uv可执行文件会落到那个python的Scripts目录下，换环境就找不到，而且升级/卸\n载都要用一个pip再操作。\n3.使用方法——以VS Code编译器为例\n步骤1：在VS Code中启动终端，建议用cmd；\n步骤2：在cmd中新建虚拟环境；\n步骤3：激活虚拟环境；\n步骤4：在VS Code中选择解释器；\n（1）按Ctrl+Shift+P，输入“Python:Select Interpreter\"\n（2）选择.venv下的Python路径（如./.venv/Scripts/python.exe）\n步骤5：安装并注册内核；\n步骤6：选择内核；\n打开.ipynb文件，点击右上角内核名称，选择.venv；\n步骤7：修改pip源；\n（1）创建/修改pip全局配置文件\n（2）验证配置生效\nuv venv .venv   #第1个venv是属于uv的子命令，表示“我要创建一个虚拟环境”；.venv是我创建的环境名称，可以改动\n运行本项目\nbash\n1\n.\\.venv\\Scripts\\activate\n运行本项目\nHTML\n1\nuv pip install ipykernel\nuv run ipython kernel install --user --name=.venv --display-name \".venv\"\n运行本项目\ncmd\n1\n2\n# Windows\necho [global] > %APPDATA%\\pip\\pip.ini \necho index-url = https://pypi.tuna.tsinghua.edu.cn/simple >> %APPDATA%\\pip\\pip.ini echo trusted-host = pypi.tuna.tsinghua.edu.cn >> %APPDATA%\\pip\\pip.ini\n运行本项目\ncmd\n1\n2\n3\n复制\n复制\n复制\n复制\n繁星之歌~\n专栏目录\n关注\n9\n5\n0\n分享",
+      "metadata": {
+        "chunk_id": 5,
+        "page_number": 5,
+        "page_range": "5",
+        "word_count": 81
+      }
+    }
+  ]
+}

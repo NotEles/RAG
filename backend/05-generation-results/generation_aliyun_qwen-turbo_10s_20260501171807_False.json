@@ -1,0 +1,8 @@
+{
+  "query": "请编写 python 程序，将一段 markdown 格式的文本用 html 格式显示",
+  "timestamp": "2026-05-01T17:18:07.455696",
+  "provider": "aliyun",
+  "model": "qwen-turbo",
+  "response": "要将 Markdown 格式的文本转换为 HTML 格式，可以使用 Python 的 `markdown` 库。以下是一个简单的实现示例：\n\n```python\nimport markdown\n\ndef markdown_to_html(text):\n    \"\"\"\n    将 Markdown 文本转换为 HTML 格式。\n    \n    :param text: 输入的 Markdown 文本字符串\n    :return: 转换后的 HTML 字符串\n    \"\"\"\n    return markdown.markdown(text)\n\nif __name__ == \"__main__\":\n    # 示例 Markdown 文本\n    markdown_input = \"\"\"# 你好\n    这是一个 **Markdown** 示例。\n    \n    - 列表项 1\n    - 列表项 2\n    \n    ```python\n    print(\"Hello, World!\")\n    ```\n    \"\"\"\n    \n    # 转换为 HTML\n    html_output = markdown_to_html(markdown_input)\n    \n    # 输出结果\n    print(html_output)\n```\n\n### 说明：\n1. **依赖库**：使用了 `markdown` 库，需先通过 `pip install markdown` 安装。\n2. **功能**：\n   - `markdown.markdown()` 函数将 Markdown 文本转换为 HTML。\n   - 支持基本的 Markdown 语法（如标题、列表、代码块等）。\n3. **示例**：包含标题、加粗文本、列表和代码块的 Markdown 输入，输出对应的 HTML 结果。\n\n### 输出示例：\n```html\n<h1>你好</h1>\n<p>这是一个 <strong>Markdown</strong> 示例。</p>\n<ul>\n<li>列表项 1</li>\n<li>列表项 2</li>\n</ul>\n<pre><code class=\"language-python\">print(\"Hello, World!\")\n</code></pre>\n```\n\n如果需要更复杂的转换（如支持表格、数学公式等），可以扩展 `markdown.markdown()` 的参数，例如指定扩展模块。",
+  "context": []
+}

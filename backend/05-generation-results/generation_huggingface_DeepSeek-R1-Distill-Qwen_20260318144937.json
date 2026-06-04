@@ -1,0 +1,37 @@
+{
+  "query": "What is GRPO",
+  "timestamp": "2026-03-18T14:49:37.752515",
+  "provider": "huggingface",
+  "model": "DeepSeek-R1-Distill-Qwen",
+  "response": "GRPO 代表的是 Group Relative Policy Optimization，是一种在强化学习（RL）中用来减少训练成本的策略。它通过采用组相对政策优化，避免了传统的 critic 模型与 policy 模型大小相同的问题。具体来说，GRPO 对于每一个问题 q，会从原政策 π_oldsampling一组输出 {o1, o2, · · ·, oG}，然后优化政策模型 π_oth by maximizing以下目标函数:\n\n[Source 1]: Group Relative Policy Optimization\n</think>\n\nGroup Relative Policy Optimization (GRPO) 是一种在强化学习中用于减少训练成本的策略。它通过采用组相对政策优化，避免了传统的 critic 模型与 policy 模型大小相同的问题。具体来说，GRPO 对于每一个问题 q，会从原政策 π_oldsampling一组输出 {o1, o2, · · ·, oG}，然后优化政策模型 π_oth by maximizing以下目标函数:\n\n<answer> answer here </answer>",
+  "context": [
+    {
+      "text": "Group Relative Policy Optimization In order to save the training costs of RL, we adopt Group Relative Policy Optimization (GRPO) (Shao et al., 2024), which foregoes the critic model that is typically the same size as the policy model, and estimates the baseline from group scores instead. Specifically, for each question 𝑞, GRPO samples a group of outputs {𝑜1, 𝑜2, · · · , 𝑜𝐺} from the old policy 𝜋𝜃𝑜𝑙𝑑 and then optimizes the policy model 𝜋𝜃 by maximizing the following objective:",
+      "score": 0.23180031776428223,
+      "metadata": {
+        "source": "DeepSeek.pdf",
+        "page": "5",
+        "chunk": 133,
+        "total_chunks": 460,
+        "page_range": "5",
+        "embedding_provider": "huggingface",
+        "embedding_model": "sentence-transformers/all-mpnet-base-v2",
+        "embedding_timestamp": "2025-02-14T22:56:08.940325"
+      }
+    },
+    {
+      "text": "A conversation between User and Assistant. The user asks a question, and the Assistant solves it. The assistant first thinks about the reasoning process in the mind and then provides the user with the answer. The reasoning process and answer are enclosed within <think> </think> and <answer> </answer> tags, respectively, i.e., <think> reasoning process here </think> <answer> answer here </answer>. User: prompt. Assistant:",
+      "score": 0.12676094472408295,
+      "metadata": {
+        "source": "DeepSeek.pdf",
+        "page": "6",
+        "chunk": 162,
+        "total_chunks": 460,
+        "page_range": "6",
+        "embedding_provider": "huggingface",
+        "embedding_model": "sentence-transformers/all-mpnet-base-v2",
+        "embedding_timestamp": "2025-02-14T22:56:09.155617"
+      }
+    }
+  ]
+}

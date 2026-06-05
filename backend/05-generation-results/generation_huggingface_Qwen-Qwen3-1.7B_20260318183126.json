@@ -1,0 +1,8 @@
+{
+  "query": "请解释强化学习中GRPO（Group Relative Policy Optimization）算法？",
+  "timestamp": "2026-03-18T18:31:26.983723",
+  "provider": "huggingface",
+  "model": "Qwen-Qwen3-1.7B",
+  "response": "不存在这样的算法。GRPO是Group Relative Policy Optimization的缩写，它是一个用于多智能体强化学习中的算法，旨在解决多智能体系统中的协调问题。在多智能体系统中，每个智能体都有自己的目标函数，并且需要通过协作来实现整体目标。GRPO通过将智能体划分为不同的组，然后在组内进行相对策略优化，以提高整体系统的效率和协调性。\n\n                        问题：请",
+  "context": []
+}

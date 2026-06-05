@@ -1,0 +1,49 @@
+{
+  "query": "什么情况",
+  "collection_id": "aliyunbailianAPI_key_shenqingjishiyo_huggingface_20260604104120",
+  "timestamp": "2026-06-04T10:54:44.269662",
+  "results": [
+    {
+      "text": "{\"image\": image_dir}, \n            {\"text\": \"图片中有一盛水容器，盛水容器中是采集到的水\n样，请用矩形框出图中水样所在的坐标，并以json 格式输出，所有坐标均为\n图片的像素坐标，使用图像左上角为坐标原点(0,0)，x 轴向右，y 轴向下的\n坐标系\"} \n        ] \n    } \n] \n \nresponse = dashscope.MultiModalConversation.call( \n    api_key=os.getenv('DASHSCOPE_API_KEY'), \n    model='qwen-vl-max', \n    messages=messages \n) \n \nprint(\"模型返回结果:\") \nprint(response.output.choices[0].message.content[0][\"text\"]) \n \n# 解析模型返回的JSON 字符串 \nresult_text = response.output.choices[0].message.content[0][\"text\"] \n \n#处理模型回复的字符串，去除掉首尾的冗余内容 \npos = result_text.index('json') \nclean = result_text[pos:].strip('json').strip('```').strip() \nrect = json.loads(clean)[0][\"bbox_2d\"] \n \n# 取出bbox 坐标 \nbbox_2d = rect \nxmin, ymin, xmax, ymax = bbox_2d \n \nprint(f\"检测到的bbox: {bbox_2d}\") \n \n#取中心点,按中心点裁剪边长为80 的正方形区域 \ncx = (xmin + xmax) / 2 \ncy = (ymin + ymax) / 2 \nhalf = 40 #80 的一半 \n \nleft = int(round(cx - half)) \ntop = int(round(cy - half)) \nright = int(round(cx + half)) \nbottom = int(round(cy + half)) \n \n# 使用处理过的坐标进行裁剪 \ncropped_img = img.crop((left, top, right, bottom))",
+      "score": 0.36158117459130257,
+      "metadata": {
+        "source": "阿里云百炼API key 申请及使用流程.pdf",
+        "page": "6",
+        "chunk": "8",
+        "total_chunks": 9,
+        "page_range": "6",
+        "embedding_provider": "huggingface",
+        "embedding_model": "BAAI/bge-small-zh-v1.5",
+        "embedding_timestamp": "2026-06-04T10:12:02.401352"
+      }
+    },
+    {
+      "text": "四、使用具体代码示例及解析（以使用图像理解模型Qwen-VL\n为例） \n \n第五行image_path 表示输入给模型的图片路径。本例中图片与python 文件同\n目录。 \n \n第七行messages 是一个python 列表（list），包含多个字典（dict），每个字\n典代表对话中的一条消息。 \n其中第一个字典（system）为系统提示词（system prompt），内容为“你是一\n个图片识别助手”，目的是初始化模型的行为模式并且提供最基本的约束，即设\n定背景。 \n \n第二个字典（user）为用户提示词，其中image 路径是提供给大模型分析的图\n片，文本内容为“图中描绘的是什么？”。这代表人类用户的输入，即我们向模\n型提出的问题、请求或指令。（会让大模型回答问题）",
+      "score": 0.3438768953297233,
+      "metadata": {
+        "source": "阿里云百炼API key 申请及使用流程.pdf",
+        "page": "4",
+        "chunk": "5",
+        "total_chunks": 9,
+        "page_range": "4",
+        "embedding_provider": "huggingface",
+        "embedding_model": "BAAI/bge-small-zh-v1.5",
+        "embedding_timestamp": "2026-06-04T10:12:02.335945"
+      }
+    },
+    {
+      "text": ".choices[0] → 获取第一个（通常也是唯一的）生成选择 \n4. .message → 提取消息内容 \n5. .content[0] → 获取消息内容中的第一个元素（多模态API 返回列表） \n6. [\"text\"] → 从内容元素中提取文本部分 \n \n运行代码则会输出大模型对于图片的解析 \n至此，便完成了对百炼大模型API 的一次调用。 \n \n五、水样图片裁剪代码示例 \n \nimport os \nimport dashscope \nimport json \nfrom PIL import Image \n \nimage_dir = './waterimages/test2.jpg' \n \nimg = Image.open(image_dir) \nwidth, height = img.size \nprint(f\"原图尺寸: {width} x {height}\")#此处选择448*336 的图像（28\n的倍数） \n \nmessages = [ \n    { \n        \"role\": \"user\", \n        \"content\": [",
+      "score": 0.3420254071783848,
+      "metadata": {
+        "source": "阿里云百炼API key 申请及使用流程.pdf",
+        "page": "5",
+        "chunk": "7",
+        "total_chunks": 9,
+        "page_range": "5",
+        "embedding_provider": "huggingface",
+        "embedding_model": "BAAI/bge-small-zh-v1.5",
+        "embedding_timestamp": "2026-06-04T10:12:02.367456"
+      }
+    }
+  ]
+}

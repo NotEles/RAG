@@ -1,0 +1,21 @@
+{
+  "query": "小麦手机",
+  "collection_id": "phone_huggingface_20260510170119",
+  "timestamp": "2026-05-10T17:08:21.362164",
+  "results": [
+    {
+      "text": "小麦Pro 手机参数简览:·\n系统:安卓最新版本\n处理器:高性能八核处理器\n显示屏:6.7 英寸AMOLED 全面屏，2K 分辨率\n后置摄像头∶主摄像头6400 万像紊，四摄系统\n前置摄像头∶3200 万像素，Al 美颜、HDR 功能\n内存与存储︰最高可选12GB 运行内存，最高512GB 存储空间\n电池: 5000mAh 大容量电池，支持快速充电\n网络:支持5G 网络，Wi-Fi 6，蓝牙5.2\n其他特性:IP68 防水防尘，面部识别和指纹识别解锁\n小麦Pro 以其强大的性能、清晰的显示效果、出色的摄像能力以及长久续航等特点，为用户\n提供优质的手机体验。",
+      "score": 0.7001611590385437,
+      "metadata": {
+        "source": "phone.pdf",
+        "page": "1",
+        "chunk": "1",
+        "total_chunks": 3,
+        "page_range": "1",
+        "embedding_provider": "huggingface",
+        "embedding_model": "BAAI/bge-small-zh-v1.5",
+        "embedding_timestamp": "2026-05-10T17:01:05.021277"
+      }
+    }
+  ]
+}

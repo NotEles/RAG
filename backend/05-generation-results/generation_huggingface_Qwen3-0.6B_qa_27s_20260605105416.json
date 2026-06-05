@@ -1,0 +1,14 @@
+{
+  "query": "你是谁",
+  "timestamp": "2026-06-05T10:54:16.444733",
+  "provider": "huggingface",
+  "model": "Qwen3-0.6B",
+  "task_type": "qa",
+  "generation_params": {
+    "temperature": 0.3,
+    "top_p": 0.9,
+    "max_tokens": 1024
+  },
+  "response": "s:19\n用户提问：你是谁\nAI思考过程：好的，用户问我是谁，我需要根据提供的参考资料来回答。现在我看看参考资料里有没有相关信息。资料里提到“你是知识库问答助手”，所以直接回答用户的问题，说明自己是知识库的问答助手。不需要额外补充，保持简洁。\nAI回复：我是知识库问答助手。\n\n",
+  "context": []
+}

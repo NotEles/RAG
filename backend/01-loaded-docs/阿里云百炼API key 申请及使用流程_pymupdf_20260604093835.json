@@ -1,0 +1,75 @@
+{
+  "filename": "阿里云百炼API key 申请及使用流程.pdf",
+  "total_chunks": 7,
+  "total_pages": 7,
+  "loading_method": "pymupdf",
+  "loading_strategy": null,
+  "chunking_strategy": null,
+  "chunking_method": "loaded",
+  "timestamp": "2026-06-04T09:38:35.725079",
+  "chunks": [
+    {
+      "content": "一、阿里云百炼API Key 申请： \n \n官方文档：如何获取API Key_大模型服务平台百炼(Model \nStudio)-阿里云帮助中心 \n \n注意：按照官方文档步骤即可申请成功。需要将API Key 配置到环境变量当\n中，以便后续使用。 \n \n开通百炼后，即进入免费使用期，百炼大模型有90 天100 万tokens 的 \n免费额度 \n模型免费额度查询：大模型服务平台百炼控制台，点击某模型即可查询该模型 \n的剩余免费额度，如下图，qwen-VL-Plus 还剩77%免费token 数。 \n \n \n模型token 用量监测：大模型服务平台百炼控制台，选取时间和推理类型即可\n查看对应模型在该时间段内的token 消耗量",
+      "metadata": {
+        "chunk_id": 1,
+        "page_number": 1,
+        "page_range": "1",
+        "word_count": 23
+      }
+    },
+    {
+      "content": "点击对应模型的“监控”，即可查看token 使用量 \n \n二、阿里云学生300 元优惠券申请及使用： \n \n阿里云学生权益：阿里云精选权益_助力高校师生用云无忧-\n阿里云  \n \n \n根据官网内容进行学生身份认证并领取即可享受无门槛300 元优惠券（适\n用范围详见官网）以Qwen-VL-max 为例，300 元优惠券约可以使用1.8 亿 \ntoken。 \n三、阿里云百炼API Key 及通义千问大模型使用方法（以\ndashscope 为例）： \n \n官方文档：什么是阿里云百炼_大模型服务平台百炼(Model",
+      "metadata": {
+        "chunk_id": 2,
+        "page_number": 2,
+        "page_range": "2",
+        "word_count": 19
+      }
+    },
+    {
+      "content": "Studio)-阿里云帮助中心 \n \n \n前置工作： \n1. 配置python 环境 \n2. 获取阿里云API Key \n3. 在终端使用 pip install dashscope 命令安装dashscope 环境 \n4. 在上面官方文档中找到自己要用的模型，以图像理解模型（Qwen-VL \n）为例，具体链接如何使用Qwen-VL 模型_大模型服务平台百炼(Model \nStudio)-阿里云帮助中心 \n \n \n \n之后就可以按照官方文档进行操作了",
+      "metadata": {
+        "chunk_id": 3,
+        "page_number": 3,
+        "page_range": "3",
+        "word_count": 21
+      }
+    },
+    {
+      "content": "四、使用具体代码示例及解析（以使用图像理解模型Qwen-VL\n为例） \n \n第五行image_path 表示输入给模型的图片路径。本例中图片与python 文件同\n目录。 \n \n第七行messages 是一个python 列表（list），包含多个字典（dict），每个字\n典代表对话中的一条消息。 \n其中第一个字典（system）为系统提示词（system prompt），内容为“你是一\n个图片识别助手”，目的是初始化模型的行为模式并且提供最基本的约束，即设\n定背景。 \n \n第二个字典（user）为用户提示词，其中image 路径是提供给大模型分析的图\n片，文本内容为“图中描绘的是什么？”。这代表人类用户的输入，即我们向模\n型提出的问题、请求或指令。（会让大模型回答问题）",
+      "metadata": {
+        "chunk_id": 4,
+        "page_number": 4,
+        "page_range": "4",
+        "word_count": 18
+      }
+    },
+    {
+      "content": "第十九行为DashScope SDK 调用阿里云百炼多模态大模型API 的标准方式。其\n中api_key 调用了系统环境变量中事先配置好的DASHSCOPE_API_KEY。 \n \n第二十五行为输出结果，具体为： \n1.  response → 完整的API 响应对象 \n2. .output → 提取响应中的输出部分 \n3. .choices[0] → 获取第一个（通常也是唯一的）生成选择 \n4. .message → 提取消息内容 \n5. .content[0] → 获取消息内容中的第一个元素（多模态API 返回列表） \n6. [\"text\"] → 从内容元素中提取文本部分 \n \n运行代码则会输出大模型对于图片的解析 \n至此，便完成了对百炼大模型API 的一次调用。 \n \n五、水样图片裁剪代码示例 \n \nimport os \nimport dashscope \nimport json \nfrom PIL import Image \n \nimage_dir = './waterimages/test2.jpg' \n \nimg = Image.open(image_dir) \nwidth, height = img.size \nprint(f\"原图尺寸: {width} x {height}\")#此处选择448*336 的图像（28\n的倍数） \n \nmessages = [ \n    { \n        \"role\": \"user\", \n        \"content\": [",
+      "metadata": {
+        "chunk_id": 5,
+        "page_number": 5,
+        "page_range": "5",
+        "word_count": 71
+      }
+    },
+    {
+      "content": "{\"image\": image_dir}, \n            {\"text\": \"图片中有一盛水容器，盛水容器中是采集到的水\n样，请用矩形框出图中水样所在的坐标，并以json 格式输出，所有坐标均为\n图片的像素坐标，使用图像左上角为坐标原点(0,0)，x 轴向右，y 轴向下的\n坐标系\"} \n        ] \n    } \n] \n \nresponse = dashscope.MultiModalConversation.call( \n    api_key=os.getenv('DASHSCOPE_API_KEY'), \n    model='qwen-vl-max', \n    messages=messages \n) \n \nprint(\"模型返回结果:\") \nprint(response.output.choices[0].message.content[0][\"text\"]) \n \n# 解析模型返回的JSON 字符串 \nresult_text = response.output.choices[0].message.content[0][\"text\"] \n \n#处理模型回复的字符串，去除掉首尾的冗余内容 \npos = result_text.index('json') \nclean = result_text[pos:].strip('json').strip('```').strip() \nrect = json.loads(clean)[0][\"bbox_2d\"] \n \n# 取出bbox 坐标 \nbbox_2d = rect \nxmin, ymin, xmax, ymax = bbox_2d \n \nprint(f\"检测到的bbox: {bbox_2d}\") \n \n#取中心点,按中心点裁剪边长为80 的正方形区域 \ncx = (xmin + xmax) / 2 \ncy = (ymin + ymax) / 2 \nhalf = 40 #80 的一半 \n \nleft = int(round(cx - half)) \ntop = int(round(cy - half)) \nright = int(round(cx + half)) \nbottom = int(round(cy + half)) \n \n# 使用处理过的坐标进行裁剪 \ncropped_img = img.crop((left, top, right, bottom))",
+      "metadata": {
+        "chunk_id": 6,
+        "page_number": 6,
+        "page_range": "6",
+        "word_count": 101
+      }
+    },
+    {
+      "content": "# 确保目录存在 \nsave_dir = os.path.join(os.path.dirname(__file__), \n'save_cutImages') \nos.makedirs(save_dir, exist_ok=True) \n \n# 保存结果 \nsave_path = os.path.join(save_dir, 'water_square_crop.jpg') \ncropped_img.save(save_path) \n \nprint(f\"已将裁剪后的水图像保存到: {save_path}\") \nprint(f\"裁剪后图像尺寸: {cropped_img.size}\") \n \n# 显示裁剪图 \ncropped_img.show(title=\"裁剪后的水区域\") \n \n \n输入图片：\n    \n \n大模型返回后裁剪：\n \n \n处理后裁剪出80*80 的水样图片：",
+      "metadata": {
+        "chunk_id": 7,
+        "page_number": 7,
+        "page_range": "7",
+        "word_count": 26
+      }
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "query": "自然语言处理是什么",
+  "timestamp": "2026-06-04T12:46:26.144726",
+  "provider": "deepseek",
+  "model": "deepseek-v3",
+  "response": "根据提供的上下文，自然语言处理是研究如何用计算方法对人类语言进行建模、分析、理解与生成的交叉学科。它既关注语言数据的表示学习，也关注在具体任务中实现可靠的语义处理能力，理论上涉及语言规律建模，应用上服务于搜索、翻译、问答、信息抽取和智能助手等系统。",
+  "context": [
+    {
+      "text": "问题：什么是自然语言处理？\n回答：自然语言处理是研究如何用计算方法对人类语言进行建模、分析、理解与生成的交叉学科。它既关注语言数据的表示学习，也关注在具体任务中实现可靠的语义处理能力，因此在理论上涉及语言规律建模，在应用上广泛服务于搜索、翻译、问答、信息抽取和智能助手等系统。",
+      "score": 0.8142908110889419,
+      "metadata": {
+        "source": "course_qa (1).json",
+        "page": "1",
+        "chunk": "course_qa__1__json_20260604123522609015_1",
+        "total_chunks": 20,
+        "page_range": "1",
+        "embedding_provider": "huggingface",
+        "embedding_model": "BAAI/bge-small-zh-v1.5",
+        "embedding_timestamp": "2026-06-04T12:35:22.373506"
+      }
+    },
+    {
+      "text": "问题：自然语言处理是否等于让机器真正理解语言？\n回答：把自然语言处理等同于让机器真正理解语言并不严谨。NLP 更现实的定义，是通过计算方法让系统在语言相关任务中表现出有效能力，例如分类、问答、翻译和信息抽取。尽管现代模型可以在许多任务上展现出强大的上下文利用和语义推断能力，但这是否构成与人类相当的真正理解，仍然是开放问题。",
+      "score": 0.7465242331704657,
+      "metadata": {
+        "source": "course_qa (1).json",
+        "page": "18",
+        "chunk": "course_qa__1__json_20260604123522609015_18",
+        "total_chunks": 20,
+        "page_range": "18",
+        "embedding_provider": "huggingface",
+        "embedding_model": "BAAI/bge-small-zh-v1.5",
+        "embedding_timestamp": "2026-06-04T12:35:22.570750"
+      }
+    },
+    {
+      "text": "问题：自然语言处理和计算语言学有什么联系与区别？\n回答：自然语言处理与计算语言学的联系在于，它们都试图用计算方法处理和研究人类语言；区别在于关注重心略有不同。计算语言学通常更偏向语言现象的形式化描述、理论建模与解释，强调语言结构本身如何被计算表达；自然语言处理则更强调算法实现、系统构建与任务效果，例如机器翻译、信息抽取和对话系统。",
+      "score": 0.708996753677219,
+      "metadata": {
+        "source": "course_qa (1).json",
+        "page": "20",
+        "chunk": "course_qa__1__json_20260604123522609015_20",
+        "total_chunks": 20,
+        "page_range": "20",
+        "embedding_provider": "huggingface",
+        "embedding_model": "BAAI/bge-small-zh-v1.5",
+        "embedding_timestamp": "2026-06-04T12:35:22.590651"
+      }
+    }
+  ]
+}

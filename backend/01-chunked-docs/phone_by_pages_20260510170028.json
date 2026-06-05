@@ -1,0 +1,37 @@
+{
+  "filename": "phone_info_pages.pdf",
+  "total_chunks": 3,
+  "total_pages": 3,
+  "loading_method": "pymupdf",
+  "chunking_method": "by_pages",
+  "timestamp": "2026-05-10T17:00:28.982684",
+  "chunks": [
+    {
+      "content": "小麦Pro 手机参数简览:·\n系统:安卓最新版本\n处理器:高性能八核处理器\n显示屏:6.7 英寸AMOLED 全面屏，2K 分辨率\n后置摄像头∶主摄像头6400 万像紊，四摄系统\n前置摄像头∶3200 万像素，Al 美颜、HDR 功能\n内存与存储︰最高可选12GB 运行内存，最高512GB 存储空间\n电池: 5000mAh 大容量电池，支持快速充电\n网络:支持5G 网络，Wi-Fi 6，蓝牙5.2\n其他特性:IP68 防水防尘，面部识别和指纹识别解锁\n小麦Pro 以其强大的性能、清晰的显示效果、出色的摄像能力以及长久续航等特点，为用户\n提供优质的手机体验。",
+      "metadata": {
+        "chunk_id": 1,
+        "page_number": 1,
+        "page_range": "1",
+        "word_count": 28
+      }
+    },
+    {
+      "content": "苹果iPhone 17 参数简览:·\n屏幕：6.3 英寸，刷新率120Hz，分辨率FHD+\n系统：iOS\nSIM 卡：2 个，类型Nano SIM\n5G 网络：支持5G\n存储卡：不支持\n机身内存：256GB\n充电：无线充电，充电功率40W\n生物识别：人脸识别\n拍照特色：杜比视界\n前摄主像素：1800 万像素\n后摄主像素：4800 万像素\n屏幕材质：OLED 全面屏\nCPU 型号：A19",
+      "metadata": {
+        "chunk_id": 2,
+        "page_number": 2,
+        "page_range": "2",
+        "word_count": 25
+      }
+    },
+    {
+      "content": "小米REDMI Note14 参数简览:·\n屏幕：德国莱茵护眼，刷新率120Hz，6.67 英寸，分辨率FHD+，OLED 直屏\n系统：小米澎湃os\nSIM 卡：2 个\n网络：4G TD-LTE 4G FDD-LTE，支持5G\n机身内存：128GB\n运行内存：8GB\n充电：不支持无线充电，充电功率45W\n电池容量：5110mAh(typ)\n生物识别：屏幕指纹，人脸识别\n前摄主像素：1600 万像素\n后摄主像素：5000 万像素\n拍照特色：光学防抖\nCPU 型号：天玑7025-Ultra",
+      "metadata": {
+        "chunk_id": 3,
+        "page_number": 3,
+        "page_range": "3",
+        "word_count": 26
+      }
+    }
+  ]
+}

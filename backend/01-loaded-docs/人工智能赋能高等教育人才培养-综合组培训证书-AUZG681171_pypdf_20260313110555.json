@@ -1,0 +1,21 @@
+{
+  "filename": "人工智能赋能高等教育人才培养-综合组培训证书-AUZG681171.pdf",
+  "total_chunks": 1,
+  "total_pages": 1,
+  "loading_method": "pypdf",
+  "loading_strategy": null,
+  "chunking_strategy": null,
+  "chunking_method": "loaded",
+  "timestamp": "2026-03-13T11:05:55.864231",
+  "chunks": [
+    {
+      "content": "证书编号：AUZG681171\n全国高校教师网络培训中心 \n2025年08月13日\n武汉大学\n韩波\n兹证明： \n \n \n \n \n    于2025 年8月，参加了由教育部高等教育司主办，北京大学、\n全国高校教师网络培训中心承办的 2025 年度人工智能赋能高等教\n育人才培养系列师资培训(综合组)。完成 16学时的课程学习，特\n此证明。",
+      "metadata": {
+        "chunk_id": 1,
+        "page_number": 1,
+        "page_range": "1",
+        "word_count": 14
+      }
+    }
+  ]
+}

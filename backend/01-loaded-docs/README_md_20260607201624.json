@@ -1,0 +1,199 @@
+{
+  "filename": "README.md",
+  "total_chunks": 17,
+  "total_pages": 17,
+  "loading_method": "md",
+  "loading_strategy": null,
+  "chunking_strategy": null,
+  "chunking_method": "loaded",
+  "timestamp": "2026-06-07T20:16:24.860713",
+  "chunks": [
+    {
+      "content": "# 基于 VGG19 的非实时图像风格迁移",
+      "metadata": {
+        "chunk_id": 1,
+        "page_number": 1,
+        "page_range": "1",
+        "word_count": 4,
+        "source_type": "markdown",
+        "title": "基于 VGG19 的非实时图像风格迁移"
+      }
+    },
+    {
+      "content": "## 1. 项目目标\n本项目实现了基于 Gatys 方法的非实时图像风格迁移，满足以下要求：\n\n- a1：利用 VGG19 模型进行图像特征提取\n- a2：使用 Python 实现内容损失与风格损失计算\n- a3：实现迭代优化生成风格化图像的完整流程\n\n项目核心文件：\n\n- `utils.py`：数据加载与图像保存\n- `loss.py`：Gram 矩阵、内容损失、风格损失\n- `model.py`：VGG19 特征网络构建与损失层注入\n- `train.py`：超参数设置、优化迭代、结果输出\n\n---",
+      "metadata": {
+        "chunk_id": 2,
+        "page_number": 2,
+        "page_range": "2",
+        "word_count": 28,
+        "source_type": "markdown",
+        "title": "1. 项目目标"
+      }
+    },
+    {
+      "content": "## 2. 实现流程\n\n1. 确定超参数（内容权重、风格权重、迭代步数）\n2. 加载内容图与风格图，并统一尺寸\n3. 加载预训练 VGG19（`features` 部分）作为固定特征提取器\n4. 在指定层插入内容损失与风格损失模块\n5. 以输入图像为可优化变量，使用 L-BFGS 迭代最小化总损失\n6. 定期保存中间结果与最终结果\n\n---",
+      "metadata": {
+        "chunk_id": 3,
+        "page_number": 3,
+        "page_range": "3",
+        "word_count": 20,
+        "source_type": "markdown",
+        "title": "2. 实现流程"
+      }
+    },
+    {
+      "content": "## 3. 模型框图\n\n```mermaid\nflowchart LR\n    A[内容图 Content] --> B[VGG19 特征提取]\n    S[风格图 Style] --> B\n    X[待优化图像 Input] --> B\n\n    B --> C1[内容特征层 conv4_2]\n    B --> S1[风格特征层 conv1_1]\n    B --> S2[风格特征层 conv2_1]\n    B --> S3[风格特征层 conv3_1]\n    B --> S4[风格特征层 conv4_1]\n    B --> S5[风格特征层 conv5_1]\n\n    C1 --> LC[内容损失 L_content]\n    S1 --> G1[Gram]\n    S2 --> G2[Gram]\n    S3 --> G3[Gram]\n    S4 --> G4[Gram]\n    S5 --> G5[Gram]\n\n    G1 --> LS[风格损失 L_style]\n    G2 --> LS\n    G3 --> LS\n    G4 --> LS\n    G5 --> LS\n\n    LC --> LT[总损失 L_total = alpha*L_content + beta*L_style]\n    LS --> LT\n    LT --> OPT[L-BFGS 更新 Input]\n    OPT --> X\n```\n\n---",
+      "metadata": {
+        "chunk_id": 4,
+        "page_number": 4,
+        "page_range": "4",
+        "word_count": 99,
+        "source_type": "markdown",
+        "title": "3. 模型框图"
+      }
+    },
+    {
+      "content": "## 4. 核心模块实现细节",
+      "metadata": {
+        "chunk_id": 5,
+        "page_number": 5,
+        "page_range": "5",
+        "word_count": 3,
+        "source_type": "markdown",
+        "title": "4. 核心模块实现细节"
+      }
+    },
+    {
+      "content": "### 4.1 数据加载（`utils.py`）\n\n- 内容图：等比例缩放到最长边 `max_size`（默认 512）\n- 风格图：按内容图尺寸强制对齐（`shape=content_shape`）\n- 保存结果：将张量 clamp 到 `[0,1]` 后转为 PIL 图像保存\n\n关键代码：\n\n```python\ndef image_loader(image_name, max_size=512, shape=None):\n    image = Image.open(image_name).convert(\"RGB\")\n    if shape is not None:\n        image = image.resize((shape[1], shape[0]), Image.BILINEAR)\n    else:\n        image = resize_keep_ratio(image, max_size)\n\n    loader = transforms.Compose([transforms.ToTensor()])\n    image = loader(image).unsqueeze(0)\n    return image.to(device, torch.float)\n```",
+      "metadata": {
+        "chunk_id": 6,
+        "page_number": 6,
+        "page_range": "6",
+        "word_count": 51,
+        "source_type": "markdown",
+        "title": "4.1 数据加载（`utils.py`）"
+      }
+    },
+    {
+      "content": "### 4.2 内容损失与风格损失（`loss.py`）",
+      "metadata": {
+        "chunk_id": 7,
+        "page_number": 7,
+        "page_range": "7",
+        "word_count": 3,
+        "source_type": "markdown",
+        "title": "4.2 内容损失与风格损失（`loss.py`）"
+      }
+    },
+    {
+      "content": "#### 1）Gram 矩阵\n用于表示特征图通道之间的相关性：\n\n$$\nG = F F^T\n$$\n\n```python\ndef gram_matrix(input):\n    b, c, h, w = input.size()\n    features = input.view(c, h * w)\n    G = torch.mm(features, features.t())\n    return G\n```",
+      "metadata": {
+        "chunk_id": 8,
+        "page_number": 8,
+        "page_range": "8",
+        "word_count": 32,
+        "source_type": "markdown",
+        "title": "1）Gram 矩阵"
+      }
+    },
+    {
+      "content": "#### 2）内容损失\n最小化输入图像与内容图在内容层上的特征差异：\n\n$$\nL_{content} = \\frac{1}{2}\\sum_{i,j}(F_{ij}^x - F_{ij}^c)^2\n$$\n\n```python\nclass ContentLoss(nn.Module):\n    def __init__(self, target):\n        super().__init__()\n        self.target = target.detach()\n\n    def forward(self, input):\n        self.loss = 0.5 * torch.sum((input - self.target) ** 2)\n        return input\n```",
+      "metadata": {
+        "chunk_id": 9,
+        "page_number": 9,
+        "page_range": "9",
+        "word_count": 35,
+        "source_type": "markdown",
+        "title": "2）内容损失"
+      }
+    },
+    {
+      "content": "#### 3）风格损失\n最小化输入图像与风格图在 Gram 矩阵上的差异：\n\n$$\nL_{style} = \\frac{1}{4N^2M^2}\\sum_{i,j}(G_{ij}^x - G_{ij}^s)^2\n$$\n\n其中 $N$ 为通道数，$M$ 为空间尺寸（$H\\times W$）。\n\n```python\nclass StyleLoss(nn.Module):\n    def __init__(self, target_feature):\n        super().__init__()\n        self.target = gram_matrix(target_feature).detach()\n\n    def forward(self, input):\n        b, c, h, w = input.size()\n        G = gram_matrix(input)\n        N = c\n        M = h * w\n        self.loss = torch.sum((G - self.target) ** 2) / (4 * (N ** 2) * (M ** 2))\n        return input\n```",
+      "metadata": {
+        "chunk_id": 10,
+        "page_number": 10,
+        "page_range": "10",
+        "word_count": 67,
+        "source_type": "markdown",
+        "title": "3）风格损失"
+      }
+    },
+    {
+      "content": "### 4.3 网络结构（`model.py`）\n\n- 使用预训练 `VGG19.features` 作为特征提取主干\n- 在前向网络中按层命名：`conv{block}_{idx}`、`relu...`、`pool...`\n- 内容层：`conv4_2`\n- 风格层：`conv1_1, conv2_1, conv3_1, conv4_1, conv5_1`\n- 每遇到目标层，插入对应损失模块\n- 最后裁剪网络到“最后一个损失层”为止，减少无效计算\n\n关键代码：\n\n```python\ncontent_layers = ['conv4_2']\nstyle_layers = ['conv1_1', 'conv2_1', 'conv3_1', 'conv4_1', 'conv5_1']\n\ncnn = vgg19(weights=\"DEFAULT\").features.to(device).eval()\n```",
+      "metadata": {
+        "chunk_id": 11,
+        "page_number": 11,
+        "page_range": "11",
+        "word_count": 37,
+        "source_type": "markdown",
+        "title": "4.3 网络结构（`model.py`）"
+      }
+    },
+    {
+      "content": "### 4.4 网络训练（`train.py`）\n\n- 超参数示例：\n  - `content_weight = 1`\n  - `style_weight = 1e5`\n  - `num_steps = 800`\n- 优化器：`torch.optim.LBFGS`\n- 优化对象：`input_img.requires_grad_()`\n- 每 50 步保存一次中间结果，最终保存 `result_final.jpg`\n\n关键代码：\n\n```python\noptimizer = torch.optim.LBFGS([input_img.requires_grad_()])\n\nwhile run[0] <= num_steps:\n    def closure():\n        input_img.data.clamp_(0, 1)\n        optimizer.zero_grad()\n        model(input_img)\n\n        style_score = sum(sl.loss for sl in style_losses)\n        content_score = sum(cl.loss for cl in content_losses)\n\n        loss = style_weight * style_score + content_weight * content_score\n        loss.backward()\n        run[0] += 1\n        return loss\n\n    optimizer.step(closure)\n```\n\n---",
+      "metadata": {
+        "chunk_id": 12,
+        "page_number": 12,
+        "page_range": "12",
+        "word_count": 73,
+        "source_type": "markdown",
+        "title": "4.4 网络训练（`train.py`）"
+      }
+    },
+    {
+      "content": "## 5. 结果展示（效果截图）",
+      "metadata": {
+        "chunk_id": 13,
+        "page_number": 13,
+        "page_range": "13",
+        "word_count": 3,
+        "source_type": "markdown",
+        "title": "5. 结果展示（效果截图）"
+      }
+    },
+    {
+      "content": "### 5.1 输入图像\n\n内容图：\n\n![content](images/content_1.jpg)\n\n风格图：\n\n![style](images/style1.jpg)",
+      "metadata": {
+        "chunk_id": 14,
+        "page_number": 14,
+        "page_range": "14",
+        "word_count": 7,
+        "source_type": "markdown",
+        "title": "5.1 输入图像"
+      }
+    },
+    {
+      "content": "### 5.2 迁移结果\n\n最终风格化结果：\n\n![result](output/result_final.jpg)\n\n中间迭代结果示例：\n\n- Step 200：`output/result_200.jpg`\n- Step 400：`output/result_400.jpg`\n- Step 600：`output/result_600.jpg`\n- Step 800：`output/result_800.jpg`\n\n---",
+      "metadata": {
+        "chunk_id": 15,
+        "page_number": 15,
+        "page_range": "15",
+        "word_count": 19,
+        "source_type": "markdown",
+        "title": "5.2 迁移结果"
+      }
+    },
+    {
+      "content": "## 6. 功能完备性检查结论\n\n对照题目要求，当前代码已具备完整实现：\n\n- 已实现数据加载模块\n- 已实现基本单元：卷积/池化（由 VGG19 主干提供）、内容损失、风格损失、优化器\n- 已实现网络结构构建与预训练参数加载\n- 已实现训练流程：超参数设定、损失实例化、迭代优化、结果保存\n\n可直接用于非实时图像风格迁移实验与报告整理。\n\n---",
+      "metadata": {
+        "chunk_id": 16,
+        "page_number": 16,
+        "page_range": "16",
+        "word_count": 16,
+        "source_type": "markdown",
+        "title": "6. 功能完备性检查结论"
+      }
+    },
+    {
+      "content": "## 7. 运行方式\n\n```bash\npython train.py\n```\n\n运行后输出目录：\n\n- `output/result_50.jpg` ... `output/result_800.jpg`\n- `output/result_final.jpg`",
+      "metadata": {
+        "chunk_id": 17,
+        "page_number": 17,
+        "page_range": "17",
+        "word_count": 14,
+        "source_type": "markdown",
+        "title": "7. 运行方式"
+      }
+    }
+  ]
+}

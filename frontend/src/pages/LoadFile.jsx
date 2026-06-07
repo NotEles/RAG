@@ -21,6 +21,7 @@ const LoadFile = () => {
   const [documents, setDocuments] = useState([]);
   const [activeTab, setActiveTab] = useState('preview'); // 'preview' 或 'documents'
   const [selectedDoc, setSelectedDoc] = useState(null);
+  const [showFormatTip, setShowFormatTip] = useState(false);
 
   useEffect(() => {
     fetchDocuments();
@@ -238,10 +239,25 @@ const LoadFile = () => {
         <div className="col-span-3 space-y-4">
           <div className="p-4 border rounded-lg bg-white shadow-sm">
             <div>
-              <label className="block text-sm font-medium mb-1">读入PDF文件</label>
+              <div className="relative mb-1 flex items-center gap-2">
+                <label className="block text-sm font-medium">读入文件</label>
+                <button
+                  type="button"
+                  onClick={() => setShowFormatTip(prev => !prev)}
+                  className="flex h-5 w-5 items-center justify-center rounded-full border border-blue-300 text-xs font-bold text-blue-500 hover:bg-blue-50"
+                  aria-label="查看支持的文件格式"
+                >
+                  !
+                </button>
+                {showFormatTip && (
+                  <div className="absolute left-20 top-7 z-10 w-72 rounded border border-blue-100 bg-white p-3 text-xs leading-5 text-gray-600 shadow-lg">
+                    支持 pdf、json、jsonl、docx、md、markdown、txt、csv、png、jpg、jpeg、bmp、tiff、tif、webp 等格式。
+                  </div>
+                )}
+              </div>
               <input
                 type="file"
-                accept=".pdf"
+                accept=".pdf,.json,.jsonl,.docx,.md,.markdown,.txt,.csv,.png,.jpg,.jpeg,.bmp,.tiff,.tif,.webp"
                 onChange={(e) => setFile(e.target.files[0])}
                 className="block w-full border rounded px-3 py-2"
               />
@@ -256,7 +272,9 @@ const LoadFile = () => {
               >
                 <option value="pymupdf">PyMuPDF</option>
                 <option value="pypdf">PyPDF</option>
+                <option value="pdfplumber">PDF Plumber</option>
                 <option value="unstructured">Unstructured</option>
+                <option value="auto">Auto</option>
               </select>
             </div>
 

@@ -1,0 +1,22 @@
+{
+  "filename": "Hello.txt",
+  "total_chunks": 1,
+  "total_pages": 1,
+  "loading_method": "txt",
+  "loading_strategy": null,
+  "chunking_strategy": null,
+  "chunking_method": "loaded",
+  "timestamp": "2026-06-07T20:45:32.923536",
+  "chunks": [
+    {
+      "content": "Hello world！",
+      "metadata": {
+        "chunk_id": 1,
+        "page_number": 1,
+        "page_range": "1",
+        "word_count": 2,
+        "source_type": "text"
+      }
+    }
+  ]
+}

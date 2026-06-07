@@ -21,6 +21,9 @@ const LOADING_METHODS = [
   { value: 'unstructured', label: 'Unstructured' },
 ];
 
+const SUPPORTED_EXTENSIONS = ['.pdf', '.json', '.jsonl', '.docx', '.md', '.markdown', '.txt', '.csv', '.png', '.jpg', '.jpeg', '.bmp', '.tiff', '.tif', '.webp'];
+const ACCEPTED_FILE_TYPES = SUPPORTED_EXTENSIONS.join(',');
+
 export default function ImportCourse() {
   const [file, setFile] = useState(null);
   const [loadingMethod, setLoadingMethod] = useState('pymupdf');
@@ -38,6 +41,7 @@ export default function ImportCourse() {
 
   const isPdf = file && file.name.toLowerCase().endsWith('.pdf');
   const isJson = file && file.name.toLowerCase().endsWith('.json');
+  const isSupportedFile = file && SUPPORTED_EXTENSIONS.some(ext => file.name.toLowerCase().endsWith(ext));
 
   useEffect(() => {
     setEmbeddingModel(EMBEDDING_MODELS[embeddingProvider][0]);
@@ -70,8 +74,8 @@ export default function ImportCourse() {
 
   const handleImport = async () => {
     if (!file) return;
-    if (!isPdf && !isJson) {
-      addLog('请上传 PDF 或 JSON 文件', 'error');
+    if (!isSupportedFile) {
+      addLog('请上传支持的文档格式', 'error');
       return;
     }
     setImporting(true);
@@ -100,6 +104,9 @@ export default function ImportCourse() {
 
       const data = await res.json();
       addLog(`✓ ${data.message}`, 'success');
+      if (data.collection_info) {
+        setCollectionInfo(data.collection_info);
+      }
       setFile(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
       await fetchCollectionInfo();
@@ -127,7 +134,7 @@ export default function ImportCourse() {
     <div className="p-6 h-screen flex flex-col">
       <div className="mb-4">
         <h1 className="text-2xl font-bold text-gray-800">文件导入</h1>
-        <p className="text-gray-500 text-sm mt-1">将 PDF 或 JSON 文件导入到 <span className="font-mono bg-gray-100 px-1 rounded">course</span> 知识库</p>
+        <p className="text-gray-500 text-sm mt-1">将文件导入到 <span className="font-mono bg-gray-100 px-1 rounded">course</span> 知识库</p>
       </div>
 
       <div className="flex gap-6 flex-1 min-h-0">
@@ -149,12 +156,12 @@ export default function ImportCourse() {
               {file ? (
                 <p className="text-sm text-gray-700 font-medium break-all">{file.name}</p>
               ) : (
-                <p className="text-sm text-gray-400">拖拽或点击上传 PDF / JSON</p>
+                <p className="text-sm text-gray-400">拖拽或点击上传不同格式的文件</p>
               )}
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".pdf,.json"
+                accept={ACCEPTED_FILE_TYPES}
                 className="hidden"
                 onChange={(e) => setFile(e.target.files[0])}
               />

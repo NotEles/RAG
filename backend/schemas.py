@@ -23,6 +23,10 @@ class ChunkMetadata(BaseModel):
     page_number: Union[int, str]
     page_range: str
     word_count: int
+    # --- 新增：为父子分块和结构化分块准备的字段 ---
+    parent_id: Optional[str] = None
+    parent_content: Optional[str] = None
+    heading_hierarchy: Optional[str] = None
 
 class Chunk(BaseModel):
     content: str
@@ -55,6 +59,10 @@ class ChunkRequest(BaseModel):
         description="分块方式：by_pages | fixed_size | by_paragraphs | by_sentences | semantic",
     )
     chunk_size: int = Field(1000, ge=50, description="固定大小分块时每块的字符数")
+    # --- 新增：父子分块专用参数 ---
+    parent_chunk_size: int = Field(1000, description="父块的字符数")
+    child_chunk_size: int = Field(200, description="子块的字符数")
+
 
 
 # ─────────────────────────────────────────────
@@ -100,6 +108,20 @@ class SearchRequest(BaseModel):
     top_k: int = Field(3, ge=1, le=50, description="返回结果数量")
     threshold: float = Field(0.7, ge=0.0, le=1.0, description="相似度阈值，低于此值的结果被过滤")
     word_count_threshold: int = Field(100, ge=0, description="最少字数，低于此值的结果被过滤")
+    save_results: bool = Field(False, description="是否保存搜索结果到文件")
+    # ── 查询优化（可选，默认空 = 不启用）──
+    query_strategies: List[str] = Field(
+        default=[],
+        description="查询优化策略列表：clean | rewrite | decompose | expand | hyde，空列表不启用"
+    )
+    rewrite_model_provider: str = Field(
+        default="deepseek",
+        description="查询优化所用的 LLM 提供商（仅当 query_strategies 非空时生效）"
+    )
+    rewrite_model_name: str = Field(
+        default="deepseek-v3",
+        description="查询优化所用的 LLM 模型名称"
+    )
 
 class SearchResultMeta(BaseModel):
     source: Optional[str] = None
@@ -110,6 +132,9 @@ class SearchResultMeta(BaseModel):
     embedding_provider: Optional[str] = None
     embedding_model: Optional[str] = None
     embedding_timestamp: Optional[str] = None
+    # --- 新增 ---
+    parent_id: Optional[str] = None
+    heading_hierarchy: Optional[str] = None
 
 class SearchResultItem(BaseModel):
     text: str
@@ -180,6 +205,19 @@ class QARequest(BaseModel):
     word_count_threshold: int = Field(20, ge=0)
     show_reasoning: bool = False
     task_type: Optional[str] = Field(None, description="任务类型：auto | qa | summarize | analyze | compare | explain | creative，None 则自动检测")
+    # ── 查询优化（可选，默认空 = 不启用）──
+    query_strategies: List[str] = Field(
+        default=[],
+        description="查询优化策略列表：clean | rewrite | decompose | expand | hyde，空列表不启用"
+    )
+    rewrite_model_provider: str = Field(
+        default="deepseek",
+        description="查询优化所用的 LLM 提供商（仅当 query_strategies 非空时生效）"
+    )
+    rewrite_model_name: str = Field(
+        default="deepseek-v3",
+        description="查询优化所用的 LLM 模型名称"
+    )
 
 class QAResponse(BaseModel):
     query: str

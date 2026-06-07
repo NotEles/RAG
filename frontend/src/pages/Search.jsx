@@ -17,6 +17,13 @@ const Search = () => {
   const [saveResults, setSaveResults] = useState(false);
   const [status, setStatus] = useState('');
 
+  // ── 查询优化 ──
+  const [queryStrategies, setQueryStrategies] = useState([]);
+  const [strategyMeta, setStrategyMeta] = useState([]);
+  const [rewriteProvider, setRewriteProvider] = useState('deepseek');
+  const [rewriteModel, setRewriteModel] = useState('deepseek-v3');
+  const [showQueryOpt, setShowQueryOpt] = useState(false);
+
   // 加载向量数据库providers和collections
   useEffect(() => {
     const fetchData = async () => {
@@ -30,6 +37,15 @@ const Search = () => {
         const collectionsResponse = await fetch(`${apiBaseUrl}/collections?provider=${selectedProvider}`);
         const collectionsData = await collectionsResponse.json();
         setCollections(collectionsData.collections);
+
+        // 获取查询优化策略
+        try {
+          const strategiesRes = await fetch(`${apiBaseUrl}/query-strategies`);
+          const strategiesData = await strategiesRes.json();
+          if (strategiesData.strategies) {
+            setStrategyMeta(strategiesData.strategies);
+          }
+        } catch {}
       } catch (error) {
         console.error('Error fetching data:', error);
       }
@@ -53,7 +69,10 @@ const Search = () => {
         top_k: topK,
         threshold,
         word_count_threshold: wordCountThreshold,
-        save_results: saveResults
+        save_results: saveResults,
+        query_strategies: queryStrategies,
+        rewrite_model_provider: rewriteProvider,
+        rewrite_model_name: rewriteModel,
       };
       
       console.log('发送搜索请求:', searchParams);
@@ -239,7 +258,80 @@ const Search = () => {
                 </label>
               </div>
 
-              <button 
+              {/* ── 查询优化 ── */}
+              <div className="border-t pt-3 mt-2">
+                <button
+                  onClick={() => setShowQueryOpt(!showQueryOpt)}
+                  className="w-full flex items-center justify-between text-sm font-medium text-gray-700"
+                >
+                  <span>🔍 查询优化</span>
+                  <span className={`text-xs text-gray-400 ${queryStrategies.length > 0 ? 'text-blue-500' : ''}`}>
+                    {queryStrategies.length > 0 ? `已开启 ${queryStrategies.length} 项` : '关闭'}
+                  </span>
+                </button>
+                {showQueryOpt && (
+                  <div className="mt-2 space-y-1.5">
+                    {strategyMeta.map((s) => (
+                      <label
+                        key={s.value}
+                        className={`flex items-center gap-2 p-1.5 rounded text-xs cursor-pointer ${
+                          queryStrategies.includes(s.value) ? 'bg-blue-50 text-blue-700' : 'text-gray-600'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={queryStrategies.includes(s.value)}
+                          onChange={() => setQueryStrategies(prev =>
+                            prev.includes(s.value) ? prev.filter(v => v !== s.value) : [...prev, s.value]
+                          )}
+                          className="accent-blue-500"
+                        />
+                        {s.label}
+                        {s.requires_llm && <span className="text-[10px] text-amber-500">(LLM)</span>}
+                      </label>
+                    ))}
+                    {queryStrategies.some(s => strategyMeta.find(m => m.value === s)?.requires_llm) && (
+                      <div className="pt-2 space-y-1">
+                        <select
+                          value={rewriteProvider}
+                          onChange={(e) => setRewriteProvider(e.target.value)}
+                          className="w-full border rounded px-1.5 py-1 text-xs bg-white"
+                        >
+                          <option value="deepseek">DeepSeek</option>
+                          <option value="openai">OpenAI</option>
+                          <option value="aliyun">阿里云百炼</option>
+                        </select>
+                        <select
+                          value={rewriteModel}
+                          onChange={(e) => setRewriteModel(e.target.value)}
+                          className="w-full border rounded px-1.5 py-1 text-xs bg-white"
+                        >
+                          {rewriteProvider === 'deepseek' && (
+                            <>
+                              <option value="deepseek-v3">DeepSeek V3</option>
+                              <option value="deepseek-r1">DeepSeek R1</option>
+                            </>
+                          )}
+                          {rewriteProvider === 'openai' && (
+                            <>
+                              <option value="gpt-4o-mini">GPT-4o mini</option>
+                              <option value="gpt-4o">GPT-4o</option>
+                            </>
+                          )}
+                          {rewriteProvider === 'aliyun' && (
+                            <>
+                              <option value="qwen-turbo">Qwen Turbo</option>
+                              <option value="qwen-plus">Qwen Plus</option>
+                            </>
+                          )}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <button
                 onClick={() => {
                   console.log('Search clicked with saveResults:', saveResults);
                   handleSearch();

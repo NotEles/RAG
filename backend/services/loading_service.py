@@ -1,4 +1,6 @@
-from pathlib import Path
+from pypdf import PdfReader
+import pdfplumber
+import fitz  # PyMuPDF
 import logging
 import os
 from datetime import datetime
@@ -20,7 +22,7 @@ PDF文档加载服务类
         - 支持文本分块
         - 提供元数据存储
         - 支持不同的加载策略（使用unstructured时）
- """
+"""
 class LoadingService:
     """
     PDF文档加载服务类，提供多种PDF文档加载和处理方法。
@@ -408,6 +410,7 @@ class LoadingService:
         返回:
             str: 提取的文本内容
         """
+        from unstructured.partition.pdf import partition_pdf  # 延迟导入，避免阻塞启动
         try:
             from unstructured.partition.pdf import partition_pdf
 

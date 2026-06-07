@@ -4,11 +4,8 @@ import json
 from typing import List, Dict, Any
 import logging
 from pathlib import Path
-from pymilvus import connections, utility
-from pymilvus import Collection, DataType, FieldSchema, CollectionSchema
-from utils.config import VectorDBProvider, MILVUS_CONFIG  # Updated import
+from utils.config import VectorDBProvider, MILVUS_CONFIG
 from pypinyin import lazy_pinyin, Style
-from pymilvus import MilvusClient, exceptions
 import chromadb
 import re
 from chromadb.utils import embedding_functions
@@ -220,6 +217,7 @@ class VectorStoreService:
         返回:
             索引结果信息字典
         """
+        from pymilvus import MilvusClient, Collection, FieldSchema, CollectionSchema, DataType, connections, exceptions
         try:
             # 使用 filename 作为 collection 名称前缀
             filename = embeddings_data.get("filename", "")
@@ -462,6 +460,14 @@ class VectorStoreService:
                     "embedding_timestamp": str(emb["metadata"].get("embedding_timestamp", "")),
                     "index_mode": str(config._get_chroma_index_type()),
                 }
+                # ======== 新增：将父块内容和结构化层级安全写入 ChromaDB ========
+                if "parent_id" in emb["metadata"] and emb["metadata"]["parent_id"]:
+                    metadata["parent_id"] = str(emb["metadata"]["parent_id"])
+                if "parent_content" in emb["metadata"] and emb["metadata"]["parent_content"]:
+                    metadata["parent_content"] = str(emb["metadata"]["parent_content"])
+                if "heading_hierarchy" in emb["metadata"] and emb["metadata"]["heading_hierarchy"]:
+                    metadata["heading_hierarchy"] = str(emb["metadata"]["heading_hierarchy"])
+                # ===============================================================
                 entities.append(metadata)
                 collection.add(
                     documents=[str(emb["metadata"].get("content", ""))],
@@ -538,6 +544,7 @@ class VectorStoreService:
             集合名称列表
         """
         if provider == VectorDBProvider.MILVUS:
+            from pymilvus import connections, utility
             try:
                 connections.connect(alias="default", uri=MILVUS_CONFIG["uri"])
                 collections = utility.list_collections()
@@ -563,6 +570,7 @@ class VectorStoreService:
             是否删除成功
         """
         if provider == VectorDBProvider.MILVUS:
+            from pymilvus import connections, utility
             try:
                 connections.connect(alias="default", uri=MILVUS_CONFIG["uri"])
                 utility.drop_collection(collection_name)
@@ -589,6 +597,7 @@ class VectorStoreService:
             集合信息字典
         """
         if provider == VectorDBProvider.MILVUS:
+            from pymilvus import connections, Collection
             try:
                 connections.connect(alias="default", uri=MILVUS_CONFIG["uri"])
                 collection = Collection(collection_name)

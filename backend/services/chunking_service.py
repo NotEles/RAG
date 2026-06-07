@@ -1,6 +1,6 @@
 from datetime import datetime
 import logging
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from llama_index.core.node_parser import SemanticSplitterNodeParser
 from llama_index.core.schema import Document as LlamaDocument
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding

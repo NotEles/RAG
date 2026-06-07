@@ -232,7 +232,7 @@ class SearchService:
                         display_text = original_text
                     # ===========================================================
                     processed_results.append({
-                        "text": results.get('documents')[0][hit],
+                        "text": display_text,
                         "score": float(hit_score),
                         "metadata": {
                             "source": results['metadatas'][0][hit].get('document_name'),
@@ -242,7 +242,9 @@ class SearchService:
                             "page_range": results['metadatas'][0][hit].get('page_range'),
                             "embedding_provider": results['metadatas'][0][hit].get('embedding_provider'),
                             "embedding_model": results['metadatas'][0][hit].get('embedding_model'),
-                            "embedding_timestamp": results['metadatas'][0][hit].get('embedding_timestamp')
+                            "embedding_timestamp": results['metadatas'][0][hit].get('embedding_timestamp'),
+                            "parent_id": parent_id,
+                            "heading_hierarchy": results['metadatas'][0][hit].get('heading_hierarchy'),
                         }
                     })
 

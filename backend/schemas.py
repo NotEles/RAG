@@ -23,6 +23,10 @@ class ChunkMetadata(BaseModel):
     page_number: Union[int, str]
     page_range: str
     word_count: int
+    # --- 新增：为父子分块和结构化分块准备的字段 ---
+    parent_id: Optional[str] = None
+    parent_content: Optional[str] = None
+    heading_hierarchy: Optional[str] = None
 
 class Chunk(BaseModel):
     content: str
@@ -55,6 +59,10 @@ class ChunkRequest(BaseModel):
         description="分块方式：by_pages | fixed_size | by_paragraphs | by_sentences | semantic",
     )
     chunk_size: int = Field(1000, ge=50, description="固定大小分块时每块的字符数")
+    # --- 新增：父子分块专用参数 ---
+    parent_chunk_size: int = Field(1000, description="父块的字符数")
+    child_chunk_size: int = Field(200, description="子块的字符数")
+
 
 
 # ─────────────────────────────────────────────
@@ -124,6 +132,9 @@ class SearchResultMeta(BaseModel):
     embedding_provider: Optional[str] = None
     embedding_model: Optional[str] = None
     embedding_timestamp: Optional[str] = None
+    # --- 新增 ---
+    parent_id: Optional[str] = None
+    heading_hierarchy: Optional[str] = None
 
 class SearchResultItem(BaseModel):
     text: str

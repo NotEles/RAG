@@ -2,6 +2,15 @@ from datetime import datetime
 import logging
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from utils.model_utils import get_huggingface_model_path
+from pathlib import Path
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from llama_index.core.node_parser import SemanticSplitterNodeParser
+from llama_index.core.schema import Document as LlamaDocument
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+import uuid
+from langchain.text_splitter import MarkdownHeaderTextSplitter
+
+_BGE_MODEL_PATH = str(Path(__file__).parent.parent / "models" / "bge-small-zh-v1.5")
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +36,7 @@ class ChunkingService:
             cls._embed_model = HuggingFaceEmbedding(model_name=model_path)
         return cls._embed_model
     
-    def chunk_text(self, text: str, method: str, metadata: dict, page_map: list = None, chunk_size: int = 1000) -> dict:
+    def chunk_text(self, text: str, method: str, metadata: dict, page_map: list = None,                 chunk_size: int = 1000, parent_chunk_size: int = 1000, child_chunk_size: int = 200) -> dict:
         """
         将文本按指定方法分块
         
@@ -95,6 +104,41 @@ class ChunkingService:
                             "content": chunk["text"],
                             "metadata": chunk_metadata
                         })
+            # ================= 新增：1. 父子分块 =================
+            elif method == "parent_child":
+                for page_data in page_map:
+                    page_chunks = self._parent_child_chunks(page_data['text'], parent_chunk_size, child_chunk_size)
+                    for chunk in page_chunks:
+                        chunk_metadata = {
+                            "chunk_id": len(chunks) + 1,
+                            "page_number": page_data['page'],
+                            "page_range": str(page_data['page']),
+                            "word_count": len(chunk["text"].split()),
+                            "parent_id": chunk["parent_id"],
+                            "parent_content": chunk["parent_content"]
+                        }
+                        chunks.append({
+                            "content": chunk["text"],
+                            "metadata": chunk_metadata
+                        })
+
+            # ================= 新增：2. Markdown 结构感知分块 =================
+            elif method == "markdown_structure":
+                for page_data in page_map:
+                    page_chunks = self._markdown_structure_chunks(page_data['text'])
+                    for chunk in page_chunks:
+                        chunk_metadata = {
+                            "chunk_id": len(chunks) + 1,
+                            "page_number": page_data['page'],
+                            "page_range": str(page_data['page']),
+                            "word_count": len(chunk["text"].split()),
+                            "heading_hierarchy": chunk.get("heading_hierarchy", "")
+                        }
+                        chunks.append({
+                            "content": chunk["text"],
+                            "metadata": chunk_metadata
+                        })
+            # ===============================================================
 
             elif method in ["by_paragraphs", "by_sentences"]:
                 # 对每页内容进行段落或句子分块
@@ -307,3 +351,48 @@ class ChunkingService:
         except Exception as e:
             logger.error(f"Error in chunk_from_json_qa: {str(e)}")
             raise
+    # ================= 新增：父子分块方法 =================
+    def _parent_child_chunks(self, text: str, parent_size: int, child_size: int) -> list[dict]:
+        """父子分块实现：先切大块，再切小块，小块挂载大块内容"""
+        parent_splitter = RecursiveCharacterTextSplitter(chunk_size=parent_size, chunk_overlap=100)
+        child_splitter = RecursiveCharacterTextSplitter(chunk_size=child_size, chunk_overlap=20)
+        
+        chunks = []
+        parents = parent_splitter.split_text(text)
+        for p_text in parents:
+            p_id = str(uuid.uuid4())
+            children = child_splitter.split_text(p_text)
+            for c_text in children:
+                if c_text.strip():
+                    chunks.append({
+                        "text": c_text,
+                        "parent_id": p_id,
+                        "parent_content": p_text
+                    })
+        return chunks
+
+    def _markdown_structure_chunks(self, text: str) -> list[dict]:
+        """Markdown 结构分块：提取标题层级"""
+        headers_to_split_on = [
+            ("#", "Header 1"),
+            ("##", "Header 2"),
+            ("###", "Header 3"),
+        ]
+        splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_split_on)
+        try:
+            md_docs = splitter.split_text(text)
+            chunks = []
+            for doc in md_docs:
+                if not doc.page_content.strip(): continue
+                # 拼接目录树 (如 Header 1: 第一章 > Header 2: 第三节)
+                hierarchy = " > ".join([f"{v}" for k, v in doc.metadata.items()])
+                # 为了防止嵌入模型忽略，我们直接把结构也前置到文本里
+                final_text = f"【文档结构：{hierarchy}】\n{doc.page_content}" if hierarchy else doc.page_content
+                chunks.append({
+                    "text": final_text,
+                    "heading_hierarchy": hierarchy
+                })
+            return chunks
+        except Exception:
+            # 回退处理
+            return [{"text": text}]

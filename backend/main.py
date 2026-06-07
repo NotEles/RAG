@@ -1028,8 +1028,10 @@ def _is_qa_format(json_data) -> bool:
 async def import_to_course(
     file: UploadFile = File(...),
     loading_method: str = Form("pymupdf"),
-    chunking_method: str = Form("by_pages"),
+    chunking_method: str = Form("by_pages"),     # <--- 可以把默认改成 parent_child 试试效果
     chunk_size: int = Form(1000),
+    parent_chunk_size: int = Form(1000),         # <--- 新增
+    child_chunk_size: int = Form(200),           # <--- 新增
     embedding_provider: str = Form("huggingface"),
     embedding_model: str = Form("BAAI/bge-small-zh-v1.5"),
     api_key: Optional[str] = Form(None),
@@ -1092,6 +1094,8 @@ async def import_to_course(
                         "total_pages": len(page_map),
                     },
                     page_map=page_map, chunk_size=chunk_size,
+                    parent_chunk_size=parent_chunk_size,   # <--- 新增
+                    child_chunk_size=child_chunk_size      # <--- 新增
                 )
                 chunks = chunk_result.get("chunks", [])
 
@@ -1104,7 +1108,9 @@ async def import_to_course(
             chunking_service = ChunkingService()
             chunk_result = chunking_service.chunk_text(
                 text="", method=chunking_method, metadata=metadata,
-                page_map=page_map, chunk_size=chunk_size
+                page_map=page_map, chunk_size=chunk_size,
+                parent_chunk_size=parent_chunk_size,       # <--- 新增
+                child_chunk_size=child_chunk_size          # <--- 新增
             )
             chunks = chunk_result.get("chunks", [])
         else:

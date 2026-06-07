@@ -20,6 +20,11 @@ class TaskType(str, Enum):
     COMPARE = "compare"
     EXPLAIN = "explain"
     CREATIVE = "creative"
+    # 查询优化专用类型（仅用于 query_service，不参与 auto-detect）
+    QUERY_REWRITE = "query_rewrite"
+    QUERY_DECOMPOSE = "query_decompose"
+    QUERY_EXPAND = "query_expand"
+    HYDE = "hyde"
 
 
 @dataclass
@@ -169,6 +174,84 @@ TEMPLATES: dict[TaskType, PromptTemplate] = {
         ),
         techniques=["divergent", "structured", "role"],
         generation_params={"temperature": 0.8, "top_p": 0.95, "max_tokens": 2048},
+    ),
+
+    # ── 以下为查询优化专用模板（不参与 auto-detect，由 QueryService 显式调用）──
+
+    TaskType.QUERY_REWRITE: PromptTemplate(
+        system_prompt=(
+            "你是一个查询优化专家。你的任务是将用户的口语化、模糊问题改写为更精确、更适合向量检索的查询语句。\n"
+            "要求：\n"
+            "1. 保留原始问题的核心语义和意图\n"
+            "2. 去除语气词、礼貌用语等无信息量的表达\n"
+            "3. 使用与知识库文档风格接近的书面语言\n"
+            "4. 如果是技术问题，使用专业术语代替口语化表述\n"
+            "5. 只输出改写后的查询文本，不要添加任何解释或前缀"
+        ),
+        user_template="{query}",
+        small_model_system=(
+            "将以下问题改写为更精确的检索查询，只输出改写结果，不要解释。"
+        ),
+        small_model_user="问题：{query}\n\n改写后的查询：",
+        techniques=["rewrite"],
+        generation_params={"temperature": 0.1, "top_p": 0.85, "max_tokens": 256},
+    ),
+
+    TaskType.QUERY_DECOMPOSE: PromptTemplate(
+        system_prompt=(
+            "你是一个问题分析专家。你的任务是将复杂问题拆解为多个独立的子问题，每个子问题都可以单独用于检索。\n"
+            "要求：\n"
+            "1. 每个子问题应该是自包含的、可独立检索的\n"
+            "2. 子问题之间不要有依赖关系，可以并行检索\n"
+            "3. 子问题应该覆盖原始问题的所有关键维度\n"
+            "4. 通常输出 2-5 个子问题\n"
+            "5. 每行只输出一个子问题，不要编号，不要添加前缀"
+        ),
+        user_template="{query}",
+        small_model_system=(
+            "将复杂问题拆解为几个独立的子问题，每行一个，不要编号。"
+        ),
+        small_model_user="复杂问题：{query}\n\n拆解后的子问题（每行一个）：",
+        techniques=["decompose"],
+        generation_params={"temperature": 0.2, "top_p": 0.85, "max_tokens": 512},
+    ),
+
+    TaskType.QUERY_EXPAND: PromptTemplate(
+        system_prompt=(
+            "你是一个查询扩展专家。你的任务是从一个原始查询出发，生成多个语义相近但表述不同的查询变体。\n"
+            "要求：\n"
+            "1. 每个变体与原始查询表达同一信息需求，但用词和句式不同\n"
+            "2. 变体应涵盖不同的角度：关键词组合、问题形式、陈述形式等\n"
+            "3. 通常输出 3-5 个变体\n"
+            "4. 每行只输出一个变体，不要编号，不要添加前缀\n"
+            "5. 不要包含原始查询本身"
+        ),
+        user_template="{query}",
+        small_model_system=(
+            "将以下查询改写为3个不同的表述方式，每行一个，不要编号。"
+        ),
+        small_model_user="原始查询：{query}\n\n不同表述（每行一个）：",
+        techniques=["expand"],
+        generation_params={"temperature": 0.6, "top_p": 0.95, "max_tokens": 512},
+    ),
+
+    TaskType.HYDE: PromptTemplate(
+        system_prompt=(
+            "你是一个知识库文档撰写助手。请根据用户的问题，撰写一份可能出现在知识库中的\"假设文档片段\"，"
+            "这段文字应该像真实的技术文档一样，包含与问题相关的知识。\n"
+            "要求：\n"
+            "1. 使用陈述句，风格应与百科或技术文档一致\n"
+            "2. 包含与问题相关的关键概念、定义和解释\n"
+            "3. 长度控制在 100-300 字\n"
+            "4. 只输出文档片段内容，不要添加标题或前缀"
+        ),
+        user_template="{query}",
+        small_model_system=(
+            "根据问题写一段假设的知识库文档片段，只输出文档内容。"
+        ),
+        small_model_user="问题：{query}\n\n假设文档片段：",
+        techniques=["hyde"],
+        generation_params={"temperature": 0.5, "top_p": 0.9, "max_tokens": 512},
     ),
 }
 

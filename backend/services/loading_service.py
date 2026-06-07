@@ -1,5 +1,4 @@
 from pypdf import PdfReader
-from unstructured.partition.pdf import partition_pdf
 import pdfplumber
 import fitz  # PyMuPDF
 import logging
@@ -160,6 +159,7 @@ class LoadingService:
         返回:
             str: 提取的文本内容
         """
+        from unstructured.partition.pdf import partition_pdf  # 延迟导入，避免阻塞启动
         try:
             strategy_params = {
                 "fast": {"strategy": "fast"},

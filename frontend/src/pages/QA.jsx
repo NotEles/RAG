@@ -48,6 +48,13 @@ export default function QA() {
   const [taskType, setTaskType] = useState('auto');
   const [taskTypes, setTaskTypes] = useState([]);
 
+  // ── 查询优化 ──
+  const [queryStrategies, setQueryStrategies] = useState([]);       // 勾选的策略
+  const [strategyMeta, setStrategyMeta] = useState([]);             // 可用策略元数据
+  const [rewriteProvider, setRewriteProvider] = useState('deepseek');
+  const [rewriteModel, setRewriteModel] = useState('deepseek-v3');
+  const [showQueryOpt, setShowQueryOpt] = useState(false);          // 折叠/展开
+
   useEffect(() => {
     setModel(MODELS[provider][0].value);
     setShowReasoning(false);
@@ -56,6 +63,7 @@ export default function QA() {
   useEffect(() => {
     fetchCollections();
     fetchTaskTypes();
+    fetchQueryStrategies();
   }, []);
 
   const fetchCollections = async () => {
@@ -82,6 +90,24 @@ export default function QA() {
     }
   };
 
+  const fetchQueryStrategies = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/query-strategies`);
+      const data = await res.json();
+      if (data.strategies) {
+        setStrategyMeta(data.strategies);
+      }
+    } catch {
+      setStrategyMeta([]);
+    }
+  };
+
+  const toggleStrategy = (value) => {
+    setQueryStrategies((prev) =>
+      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
+    );
+  };
+
   const handleAsk = async () => {
     if (!query.trim()) return;
     setLoading(true);
@@ -105,6 +131,9 @@ export default function QA() {
           word_count_threshold: wordCountThreshold,
           show_reasoning: showReasoning,
           task_type: taskType === 'auto' ? null : taskType,
+          query_strategies: queryStrategies,
+          rewrite_model_provider: rewriteProvider,
+          rewrite_model_name: rewriteModel,
         }),
       });
 
@@ -273,6 +302,86 @@ export default function QA() {
                 </p>
               )}
             </div>
+          </div>
+
+          {/* Query Optimization */}
+          <div className="bg-white rounded-lg shadow p-4 space-y-3">
+            <button
+              onClick={() => setShowQueryOpt(!showQueryOpt)}
+              className="w-full flex items-center justify-between font-semibold text-gray-700"
+            >
+              <span>🔍 查询优化</span>
+              <span className={`text-xs text-gray-400 transition-transform ${showQueryOpt ? 'rotate-90' : ''}`}>
+                {showQueryOpt ? '▼' : '▶'} {queryStrategies.length > 0 && (
+                  <span className="ml-1 text-blue-500">({queryStrategies.length})</span>
+                )}
+              </span>
+            </button>
+            {!showQueryOpt && queryStrategies.length > 0 && (
+              <p className="text-xs text-gray-400">
+                已开启：{queryStrategies.map(s => strategyMeta.find(m => m.value === s)?.label || s).join('、')}
+              </p>
+            )}
+            {showQueryOpt && (
+              <div className="space-y-2 pt-1">
+                <p className="text-xs text-gray-400">
+                  选择查询优化策略（默认关闭，不增加额外耗时）
+                </p>
+                {strategyMeta.map((s) => (
+                  <label
+                    key={s.value}
+                    className={`flex items-start gap-2 p-2 rounded border cursor-pointer transition-colors ${
+                      queryStrategies.includes(s.value)
+                        ? 'border-blue-300 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={queryStrategies.includes(s.value)}
+                      onChange={() => toggleStrategy(s.value)}
+                      className="mt-0.5 accent-blue-500"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm font-medium text-gray-700">{s.label}</span>
+                        {s.requires_llm && (
+                          <span className="text-[10px] px-1 py-0.5 rounded bg-amber-100 text-amber-600">LLM</span>
+                        )}
+                        {!s.requires_llm && (
+                          <span className="text-[10px] px-1 py-0.5 rounded bg-green-100 text-green-600">无开销</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-400 mt-0.5">{s.description}</p>
+                    </div>
+                  </label>
+                ))}
+                {/* LLM 配置 — 仅当选择了需要 LLM 的策略时显示 */}
+                {queryStrategies.some(s => strategyMeta.find(m => m.value === s)?.requires_llm) && (
+                  <div className="mt-3 pt-3 border-t border-gray-200 space-y-2">
+                    <p className="text-xs text-gray-500 font-medium">查询优化模型</p>
+                    <select
+                      value={rewriteProvider}
+                      onChange={(e) => { setRewriteProvider(e.target.value); setRewriteModel(MODELS[e.target.value]?.[0]?.value || ''); }}
+                      className="w-full border rounded px-2 py-1.5 text-xs bg-white"
+                    >
+                      {PROVIDERS.filter(p => p.value !== 'huggingface').map(p => (
+                        <option key={p.value} value={p.value}>{p.label}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={rewriteModel}
+                      onChange={(e) => setRewriteModel(e.target.value)}
+                      className="w-full border rounded px-2 py-1.5 text-xs bg-white"
+                    >
+                      {(MODELS[rewriteProvider] || []).map(m => (
+                        <option key={m.value} value={m.value}>{m.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Query */}

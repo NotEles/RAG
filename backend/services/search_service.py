@@ -1,12 +1,11 @@
 from typing import List, Dict, Any, Optional
 import logging
 from datetime import datetime
-from pymilvus import connections, Collection, utility
 from services.embedding_service import EmbeddingService
 from utils.config import VectorDBProvider, MILVUS_CONFIG
 import os
 import json
-from pymilvus import MilvusClient, exceptions
+import asyncio
 import chromadb
 
 chromadb_path = "./03-vector-store/chromadb"
@@ -345,4 +344,130 @@ class SearchService:
             logger.error(f"Error performing search: {str(e)}")
             raise
         finally:
-            connections.disconnect("default")
+            try:
+                from pymilvus import connections; connections.disconnect("default")
+            except Exception:
+                pass
+
+    async def multi_search(
+        self,
+        queries: List[str],
+        collection_id: str,
+        top_k: int = 3,
+        threshold: float = 0.7,
+        word_count_threshold: int = 20,
+        fusion: str = "rrf",
+        rrf_k: int = 60,
+    ) -> Dict[str, Any]:
+        """
+        多查询检索 + 结果融合。
+
+        对每个查询独立执行向量搜索，然后使用 RRF (Reciprocal Rank Fusion)
+        或其他融合策略合并去重结果。
+
+        Args:
+            queries: 查询文本列表（如经过改写/分解/扩展后的多个查询）
+            collection_id: 要搜索的集合 ID
+            top_k: 每个查询返回的最大结果数
+            threshold: 相似度阈值
+            word_count_threshold: 最少字数过滤
+            fusion: 融合策略，目前支持 "rrf"
+            rrf_k: RRF 算法的 k 常数（默认 60）
+
+        Returns:
+            {"results": [...]}，格式与 search() 一致
+        """
+        if not queries:
+            return {"results": []}
+
+        if len(queries) == 1:
+            # 单查询直接走原方法，避免无谓开销
+            return await self.search(
+                query=queries[0],
+                collection_id=collection_id,
+                top_k=top_k,
+                threshold=threshold,
+                word_count_threshold=word_count_threshold,
+            )
+
+        logger.info(f"[multi_search] Processing {len(queries)} queries with fusion={fusion}")
+
+        # 并行执行所有查询
+        tasks = [
+            self.search(
+                query=q,
+                collection_id=collection_id,
+                top_k=top_k,
+                threshold=threshold,
+                word_count_threshold=word_count_threshold,
+            )
+            for q in queries
+        ]
+        all_responses = await asyncio.gather(*tasks, return_exceptions=True)
+
+        # 收集各查询的结果，附带 rank 信息
+        # query_results: List of (rank, result_item)
+        all_items: List[tuple[int, dict]] = []  # (rank, item)
+
+        for resp in all_responses:
+            if isinstance(resp, Exception):
+                logger.warning(f"[multi_search] Query failed: {resp}")
+                continue
+            results = resp.get("results", []) if isinstance(resp, dict) else []
+            for rank, item in enumerate(results):
+                all_items.append((rank, item))
+
+        if not all_items:
+            return {"results": []}
+
+        # RRF 融合
+        if fusion == "rrf":
+            merged = self._rrf_fusion(all_items, rrf_k=rrf_k)
+        else:
+            logger.warning(f"[multi_search] Unknown fusion='{fusion}', falling back to RRF")
+            merged = self._rrf_fusion(all_items, rrf_k=rrf_k)
+
+        # 按融合分数降序，取 top_k
+        merged.sort(key=lambda x: x["score"], reverse=True)
+        final_results = merged[:top_k]
+
+        logger.info(f"[multi_search] {len(queries)} queries → {len(all_items)} raw items → {len(final_results)} fused results")
+        return {"results": final_results}
+
+    @staticmethod
+    def _rrf_fusion(
+        items: List[tuple[int, dict]],
+        rrf_k: int = 60,
+    ) -> List[dict]:
+        """
+        Reciprocal Rank Fusion。
+
+        对每个唯一文档（以 text 内容去重），累加其在不同查询中的 RRF 分数：
+            score = sum(1 / (k + rank_i))
+
+        Args:
+            items: (rank, result_item) 元组列表
+            rrf_k: RRF 常数 k
+
+        Returns:
+            融合后的结果列表，score 为 RRF 分数
+        """
+        # 用 text 内容的哈希作为 key 去重
+        import hashlib
+        doc_map: Dict[str, dict] = {}  # text_hash → merged item
+
+        for rank, item in items:
+            text = item.get("text", "")
+            key = hashlib.md5(text.encode("utf-8", errors="replace")).hexdigest()
+
+            if key not in doc_map:
+                doc_map[key] = {
+                    "text": text,
+                    "score": 0.0,
+                    "metadata": item.get("metadata", {}),
+                }
+
+            rrf_score = 1.0 / (rrf_k + rank + 1)  # rank 从 0 开始，+1 确保分母 ≥ 1
+            doc_map[key]["score"] += rrf_score
+
+        return list(doc_map.values())

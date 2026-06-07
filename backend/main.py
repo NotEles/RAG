@@ -16,6 +16,7 @@ import pandas as pd
 from pathlib import Path
 from services.generation_service import GenerationService
 from services.prompt_service import PromptService
+from services.query_service import QueryService
 from typing import List, Dict, Optional
 from schemas import (
     SaveChunksRequest, SaveChunksResponse,
@@ -262,17 +263,44 @@ async def get_collections(
 
 @app.post("/search")
 async def search(data: SearchRequest):
-    """执行向量相似度检索"""
+    """执行向量相似度检索（支持可选的查询优化策略）"""
     try:
         logger.info(f"Search request - Query: {data.query}, Collection: {data.collection_id}, Top K: {data.top_k}")
+
+        # ── 查询优化 ──
+        queries: List[str] = [data.query]  # 默认：仅原始查询
+        if data.query_strategies:
+            query_service = QueryService()
+            api_key = os.getenv("DEEPSEEK_API_KEY") or os.getenv("OPENAI_API_KEY") or ""
+            processed = query_service.process(
+                query=data.query,
+                strategies=data.query_strategies,
+                provider=data.rewrite_model_provider,
+                model_name=data.rewrite_model_name,
+                api_key=api_key,
+            )
+            queries = processed.queries
+            logger.info(f"Query optimization: {data.query_strategies} → {len(queries)} queries")
+
+        # ── 检索 ──
         search_service = SearchService()
-        results = await search_service.search(
-            query=data.query,
-            collection_id=data.collection_id,
-            top_k=data.top_k,
-            threshold=data.threshold,
-            word_count_threshold=data.word_count_threshold,
-        )
+        if len(queries) == 1:
+            results = await search_service.search(
+                query=queries[0],
+                collection_id=data.collection_id,
+                top_k=data.top_k,
+                threshold=data.threshold,
+                word_count_threshold=data.word_count_threshold,
+                save_results=data.save_results if hasattr(data, 'save_results') else False,
+            )
+        else:
+            results = await search_service.multi_search(
+                queries=queries,
+                collection_id=data.collection_id,
+                top_k=data.top_k,
+                threshold=data.threshold,
+                word_count_threshold=data.word_count_threshold,
+            )
         return results
     except Exception as e:
         logger.error(f"Error performing search: {str(e)}")
@@ -849,6 +877,45 @@ async def get_task_types():
         logger.error(f"Error getting task types: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@app.get("/query-strategies")
+async def get_query_strategies():
+    """获取可用的查询优化策略列表，供前端展示"""
+    return {
+        "strategies": [
+            {
+                "value": "clean",
+                "label": "查询清洗",
+                "description": "去除语气词、格式化文本（无 LLM 开销）",
+                "requires_llm": False,
+            },
+            {
+                "value": "rewrite",
+                "label": "查询改写",
+                "description": "将口语化问题改写为更精确的检索语句",
+                "requires_llm": True,
+            },
+            {
+                "value": "decompose",
+                "label": "问题分解",
+                "description": "将复杂问题拆解为多个独立子问题",
+                "requires_llm": True,
+            },
+            {
+                "value": "expand",
+                "label": "查询扩展",
+                "description": "生成多个语义相近的查询变体，扩大检索覆盖",
+                "requires_llm": True,
+            },
+            {
+                "value": "hyde",
+                "label": "HyDE 假设文档",
+                "description": "先生成假设答案，再用答案做向量检索",
+                "requires_llm": True,
+            },
+        ]
+    }
+
 @app.post("/generate", response_model=GenerateResponse)
 async def generate_response(data: GenerateRequest):
     """使用检索结果生成 RAG 回答"""
@@ -1106,22 +1173,48 @@ async def get_course_info():
 
 @app.post("/qa", response_model=QAResponse)
 async def qa_endpoint(data: QARequest):
-    """在指定 collection 中检索，并用 RAG 生成回答"""
+    """在指定 collection 中检索，并用 RAG 生成回答（支持可选的查询优化策略）"""
     try:
+        # ── 查询优化 ──
+        queries: List[str] = [data.query]
+        if data.query_strategies:
+            query_service = QueryService()
+            rewrite_api_key = data.api_key or os.getenv("DEEPSEEK_API_KEY") or os.getenv("OPENAI_API_KEY") or ""
+            processed = query_service.process(
+                query=data.query,
+                strategies=data.query_strategies,
+                provider=data.rewrite_model_provider,
+                model_name=data.rewrite_model_name,
+                api_key=rewrite_api_key,
+            )
+            queries = processed.queries
+            logger.info(f"QA query optimization: {data.query_strategies} → {len(queries)} queries")
+
+        # ── 检索 ──
         search_service = SearchService()
-        search_response = await search_service.search(
-            query=data.query,
-            collection_id=data.collection,
-            top_k=data.top_k,
-            threshold=data.threshold,
-            word_count_threshold=data.word_count_threshold,
-        )
+        if len(queries) == 1:
+            search_response = await search_service.search(
+                query=queries[0],
+                collection_id=data.collection,
+                top_k=data.top_k,
+                threshold=data.threshold,
+                word_count_threshold=data.word_count_threshold,
+            )
+        else:
+            search_response = await search_service.multi_search(
+                queries=queries,
+                collection_id=data.collection,
+                top_k=data.top_k,
+                threshold=data.threshold,
+                word_count_threshold=data.word_count_threshold,
+            )
         search_results = search_response.get("results", [])
 
+        # ── 生成 ──
         result = generation_service.generate(
             provider=data.provider,
             model_name=data.model_name,
-            query=data.query,
+            query=data.query,  # 用原始 query 生成，保证回答对应用户意图
             search_results=search_results,
             load_model=(data.provider == "huggingface"),
             api_key=data.api_key,

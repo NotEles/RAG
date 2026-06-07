@@ -17,6 +17,7 @@ from pathlib import Path
 from services.generation_service import GenerationService
 from services.prompt_service import PromptService
 from services.query_service import QueryService
+from services.post_retrieval_service import PostRetrievalConfig, PostRetrievalService
 from typing import List, Dict, Optional
 from schemas import (
     SaveChunksRequest, SaveChunksResponse,
@@ -54,6 +55,33 @@ app.add_middleware(
 )
 
 generation_service = GenerationService()
+post_retrieval_service = PostRetrievalService()
+
+
+def _build_post_retrieval_config(data) -> PostRetrievalConfig:
+    return PostRetrievalConfig(
+        enabled=getattr(data, "postprocess_enabled", False),
+        strategies=getattr(data, "postprocess_strategies", []) or [],
+        rerank_method=getattr(data, "rerank_method", "cross_encoder"),
+        rerank_model=getattr(data, "rerank_model", "BAAI/bge-reranker-base"),
+        rerank_top_k=getattr(data, "rerank_top_k", 5),
+        compress_method=getattr(data, "compress_method", "extractive"),
+        max_context_chars=getattr(data, "max_context_chars", 8000),
+        max_context_tokens=getattr(data, "max_context_tokens", 3000),
+        mmr_lambda=getattr(data, "mmr_lambda", 0.7),
+        llm_provider=getattr(data, "postprocess_llm_provider", "ollama"),
+        llm_model=getattr(data, "postprocess_llm_model", "qwen2.5:3b"),
+        api_key=getattr(data, "postprocess_api_key", None),
+    )
+
+
+def _candidate_top_k(data) -> int:
+    if not getattr(data, "postprocess_enabled", False):
+        return data.top_k
+    strategies = set(getattr(data, "postprocess_strategies", []) or [])
+    if not ({"rerank", "diversify"} & strategies):
+        return data.top_k
+    return max(data.top_k, getattr(data, "rerank_top_k", data.top_k), getattr(data, "postprocess_fetch_k", data.top_k))
 
 @app.post("/process")
 async def process_file(
@@ -284,24 +312,37 @@ async def search(data: SearchRequest):
 
         # ── 检索 ──
         search_service = SearchService()
+        retrieval_top_k = _candidate_top_k(data)
         if len(queries) == 1:
             results = await search_service.search(
                 query=queries[0],
                 collection_id=data.collection_id,
-                top_k=data.top_k,
+                top_k=retrieval_top_k,
                 threshold=data.threshold,
                 word_count_threshold=data.word_count_threshold,
-                save_results=data.save_results if hasattr(data, 'save_results') else False,
+                save_results=False,
             )
         else:
             results = await search_service.multi_search(
                 queries=queries,
                 collection_id=data.collection_id,
-                top_k=data.top_k,
+                top_k=retrieval_top_k,
                 threshold=data.threshold,
                 word_count_threshold=data.word_count_threshold,
             )
-        return results
+
+        search_results = results.get("results", [])
+        post_config = _build_post_retrieval_config(data)
+        if post_config.enabled:
+            search_results = post_retrieval_service.process(data.query, search_results, post_config)
+        if not post_config.enabled and len(search_results) > data.top_k:
+            search_results = search_results[:data.top_k]
+
+        response = {"results": search_results}
+        if data.save_results:
+            filepath = search_service.save_search_results(data.query, data.collection_id, search_results)
+            response["saved_filepath"] = filepath
+        return response
     except Exception as e:
         logger.error(f"Error performing search: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -920,16 +961,22 @@ async def get_query_strategies():
 async def generate_response(data: GenerateRequest):
     """使用检索结果生成 RAG 回答"""
     try:
+        search_results = data.search_results
+        post_config = _build_post_retrieval_config(data)
+        if post_config.enabled:
+            search_results = post_retrieval_service.process(data.query, search_results, post_config)
+
         result = generation_service.generate(
             provider=data.provider,
             model_name=data.model_name,
             query=data.query,
-            search_results=data.search_results,
+            search_results=search_results,
             load_model=data.load_model,
             api_key=data.api_key,
             show_reasoning=data.show_reasoning,
             task_type=data.task_type,
         )
+        result["search_results"] = search_results
         return GenerateResponse(**result)
     except Exception as e:
         logger.error(f"Error generating response: {str(e)}")
@@ -1201,11 +1248,12 @@ async def qa_endpoint(data: QARequest):
 
         # ── 检索 ──
         search_service = SearchService()
+        retrieval_top_k = _candidate_top_k(data)
         if len(queries) == 1:
             search_response = await search_service.search(
                 query=queries[0],
                 collection_id=data.collection,
-                top_k=data.top_k,
+                top_k=retrieval_top_k,
                 threshold=data.threshold,
                 word_count_threshold=data.word_count_threshold,
             )
@@ -1213,11 +1261,17 @@ async def qa_endpoint(data: QARequest):
             search_response = await search_service.multi_search(
                 queries=queries,
                 collection_id=data.collection,
-                top_k=data.top_k,
+                top_k=retrieval_top_k,
                 threshold=data.threshold,
                 word_count_threshold=data.word_count_threshold,
             )
         search_results = search_response.get("results", [])
+
+        post_config = _build_post_retrieval_config(data)
+        if post_config.enabled:
+            search_results = post_retrieval_service.process(data.query, search_results, post_config)
+        elif len(search_results) > data.top_k:
+            search_results = search_results[:data.top_k]
 
         # ── 生成 ──
         result = generation_service.generate(

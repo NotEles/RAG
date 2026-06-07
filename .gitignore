@@ -26,3 +26,7 @@ CLAUDE.md
 __pycache__/
 *.pyc
 *.pyo
+backend/__pycache__/
+backend/services/__pycache__/
+backend/utils/__pycache__/
+backend/03-vector-store/chromadb/chroma.sqlite3

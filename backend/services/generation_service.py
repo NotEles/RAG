@@ -436,6 +436,62 @@ class GenerationService:
             logger.error(f"Error in generation: {str(e)}")
             raise
 
+    def generate_raw(
+            self,
+            provider: str,
+            model_name: str,
+            system_msg: str,
+            user_msg: str,
+            api_key: Optional[str] = None,
+            generation_params: dict = None,
+    ) -> str:
+        """
+        通用 LLM 调用方法，供 QueryService 查询优化使用。
+        与 generate() 不同：不构建 RAG 上下文、不保存文件、直接返回原始文本。
+
+        参数:
+            provider: 模型提供商 (openai | deepseek | aliyun | huggingface)
+            model_name: 模型名称
+            system_msg: 系统角色 prompt
+            user_msg: 用户消息 prompt
+            api_key: API 密钥
+            generation_params: 可选的生成参数 (temperature, top_p, max_tokens)
+
+        返回:
+            LLM 生成的原始文本
+        """
+        # 用占位参数填充原有方法签名，避免重复实现
+        dummy_query = user_msg
+        dummy_context = ""
+
+        if provider == "huggingface":
+            return self._generate_with_huggingface(
+                model_name, dummy_query, dummy_context, load_model=False,
+                system_msg=system_msg, user_msg=user_msg,
+                generation_params=generation_params,
+            )
+        elif provider == "openai":
+            return self._generate_with_openai(
+                model_name, dummy_query, dummy_context, api_key,
+                system_msg=system_msg, user_msg=user_msg,
+                generation_params=generation_params,
+            )
+        elif provider == "aliyun":
+            return self._generate_with_aliyun(
+                model_name, dummy_query, dummy_context, api_key,
+                system_msg=system_msg, user_msg=user_msg,
+                generation_params=generation_params,
+            )
+        elif provider == "deepseek":
+            return self._generate_with_deepseek(
+                model_name, dummy_query, dummy_context, api_key,
+                show_reasoning=False,
+                system_msg=system_msg, user_msg=user_msg,
+                generation_params=generation_params,
+            )
+        else:
+            raise ValueError(f"Unsupported provider: {provider}")
+
     def get_available_models(self) -> Dict:
         """
         获取可用的模型列表

@@ -1,9 +1,6 @@
 from datetime import datetime
 import logging
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from llama_index.core.node_parser import SemanticSplitterNodeParser
-from llama_index.core.schema import Document as LlamaDocument
-from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from utils.model_utils import get_huggingface_model_path
 
 logger = logging.getLogger(__name__)
@@ -25,6 +22,7 @@ class ChunkingService:
     @classmethod
     def _get_embed_model(cls):
         if cls._embed_model is None:
+            from llama_index.embeddings.huggingface import HuggingFaceEmbedding
             model_path = get_huggingface_model_path("BAAI/bge-small-zh-v1.5")
             cls._embed_model = HuggingFaceEmbedding(model_name=model_path)
         return cls._embed_model
@@ -194,6 +192,8 @@ class ChunkingService:
         Returns:
             分块后的文本列表
         """
+        from llama_index.core.node_parser import SemanticSplitterNodeParser
+        from llama_index.core.schema import Document as LlamaDocument
         splitter = SemanticSplitterNodeParser(
             buffer_size=buffer_size,
             breakpoint_percentile_threshold=breakpoint_percentile_threshold,

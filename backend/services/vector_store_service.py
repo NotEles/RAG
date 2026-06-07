@@ -517,6 +517,12 @@ class VectorStoreService:
                     "embedding_model": embeddings_data.get("embedding_model", ""),
                     "embedding_timestamp": str(emb["metadata"].get("embedding_timestamp", "")),
                 }
+                if "parent_id" in emb["metadata"] and emb["metadata"]["parent_id"]:
+                    metadata["parent_id"] = str(emb["metadata"]["parent_id"])
+                if "parent_content" in emb["metadata"] and emb["metadata"]["parent_content"]:
+                    metadata["parent_content"] = str(emb["metadata"]["parent_content"])
+                if "heading_hierarchy" in emb["metadata"] and emb["metadata"]["heading_hierarchy"]:
+                    metadata["heading_hierarchy"] = str(emb["metadata"]["heading_hierarchy"])
                 unique_id = id_prefix + str(int(emb["metadata"].get("chunk_id", entity_num)))
                 collection.add(
                     documents=[str(emb["metadata"].get("content", ""))],

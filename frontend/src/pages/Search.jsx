@@ -1,6 +1,7 @@
 // src/pages/Search.jsx
 import React, { useState, useEffect } from 'react';
 import RandomImage from '../components/RandomImage';
+import PostprocessTrace from '../components/PostprocessTrace';
 import { apiBaseUrl } from '../config/config';
 
 const POST_LLM_MODELS = {
@@ -22,6 +23,42 @@ const POST_LLM_MODELS = {
     { value: 'qwen-turbo', label: 'Qwen Turbo' },
     { value: 'qwen-plus', label: 'Qwen Plus' },
   ],
+};
+
+const POST_PRESETS = {
+  local_quality: {
+    label: '质量优先',
+    strategies: ['deduplicate', 'rerank', 'compress', 'context_pack'],
+    rerankMethod: 'llm',
+    compressMethod: 'llm',
+    fetchK: 20,
+    rerankTopK: 5,
+    llmCompressTopN: 2,
+    maxContextChars: 8000,
+    maxContextTokens: 3000,
+  },
+  speed: {
+    label: '速度优先',
+    strategies: ['deduplicate', 'rerank', 'context_pack'],
+    rerankMethod: 'cross_encoder',
+    compressMethod: 'extractive',
+    fetchK: 12,
+    rerankTopK: 5,
+    llmCompressTopN: 2,
+    maxContextChars: 8000,
+    maxContextTokens: 3000,
+  },
+  offline: {
+    label: '本地离线',
+    strategies: ['deduplicate', 'rerank', 'compress', 'context_pack'],
+    rerankMethod: 'cross_encoder',
+    compressMethod: 'extractive',
+    fetchK: 16,
+    rerankTopK: 5,
+    llmCompressTopN: 2,
+    maxContextChars: 8000,
+    maxContextTokens: 3000,
+  },
 };
 
 const Search = () => {
@@ -47,19 +84,41 @@ const Search = () => {
 
   // ── 检索后优化 ──
   const [postprocessEnabled, setPostprocessEnabled] = useState(true);
-  const [postStrategies, setPostStrategies] = useState(['deduplicate', 'rerank', 'compress', 'context_pack']);
+  const [postPreset, setPostPreset] = useState('speed');
+  const [postStrategies, setPostStrategies] = useState(['deduplicate', 'rerank', 'context_pack']);
   const [showPostOpt, setShowPostOpt] = useState(false);
-  const [postprocessFetchK, setPostprocessFetchK] = useState(20);
+  const [postprocessFetchK, setPostprocessFetchK] = useState(12);
   const [rerankTopK, setRerankTopK] = useState(5);
-  const [rerankMethod, setRerankMethod] = useState('llm');
+  const [rerankMethod, setRerankMethod] = useState('cross_encoder');
   const [rerankModel, setRerankModel] = useState('BAAI/bge-reranker-base');
-  const [compressMethod, setCompressMethod] = useState('llm');
+  const [compressMethod, setCompressMethod] = useState('extractive');
   const [maxContextChars, setMaxContextChars] = useState(8000);
   const [maxContextTokens, setMaxContextTokens] = useState(3000);
   const [mmrLambda, setMmrLambda] = useState(0.7);
   const [postLlmProvider, setPostLlmProvider] = useState('ollama');
   const [postLlmModel, setPostLlmModel] = useState('qwen2.5:3b');
   const [postLlmApiKey, setPostLlmApiKey] = useState('');
+  const [llmCompressTopN, setLlmCompressTopN] = useState(2);
+  const [postprocessTrace, setPostprocessTrace] = useState([]);
+
+  const applyPostPreset = (presetKey) => {
+    const preset = POST_PRESETS[presetKey];
+    if (!preset) return;
+    setPostPreset(presetKey);
+    setPostprocessEnabled(true);
+    setPostStrategies(preset.strategies);
+    setRerankMethod(preset.rerankMethod);
+    setCompressMethod(preset.compressMethod);
+    setPostprocessFetchK(preset.fetchK);
+    setRerankTopK(preset.rerankTopK);
+    setLlmCompressTopN(preset.llmCompressTopN);
+    setMaxContextChars(preset.maxContextChars);
+    setMaxContextTokens(preset.maxContextTokens);
+    if (preset.rerankMethod === 'llm' || preset.compressMethod === 'llm') {
+      setPostLlmProvider('ollama');
+      setPostLlmModel('qwen2.5:3b');
+    }
+  };
 
   // 加载向量数据库providers和collections
   useEffect(() => {
@@ -99,6 +158,7 @@ const Search = () => {
 
     setIsSearching(true);
     setStatus('');
+    setPostprocessTrace([]);
     try {
       const searchParams = {
         query,
@@ -123,6 +183,11 @@ const Search = () => {
         postprocess_llm_provider: postLlmProvider,
         postprocess_llm_model: postLlmModel,
         postprocess_api_key: postLlmProvider === 'ollama' ? null : postLlmApiKey || null,
+        llm_compress_top_n: llmCompressTopN,
+        candidate_threshold: postprocessEnabled ? Math.max(0, threshold - 0.2) : null,
+        final_threshold: postprocessEnabled ? threshold : null,
+        allow_drop_irrelevant: false,
+        postprocess_trace_enabled: true,
       };
       
       console.log('发送搜索请求:', searchParams);
@@ -141,6 +206,7 @@ const Search = () => {
 
       const data = await response.json();
       console.log('搜索响应:', data);
+      setPostprocessTrace(data.postprocess_trace || []);
 
       const responseResults = Array.isArray(data.results) ? data.results : data.results?.results;
       if (responseResults && responseResults.length > 0) {
@@ -174,7 +240,8 @@ const Search = () => {
       const saveParams = {
         query,
         collection_id: collection,
-        results: results
+        results: results,
+        postprocess_trace: postprocessTrace,
       };
 
       console.log('发送保存请求:', saveParams);
@@ -404,6 +471,18 @@ const Search = () => {
                       />
                       启用检索后优化
                     </label>
+                    <label className="block text-xs text-gray-500">
+                      优化预设
+                      <select
+                        value={postPreset}
+                        onChange={(e) => applyPostPreset(e.target.value)}
+                        className="mt-1 w-full border rounded px-1.5 py-1 text-xs bg-white"
+                      >
+                        {Object.entries(POST_PRESETS).map(([key, preset]) => (
+                          <option key={key} value={key}>{preset.label}</option>
+                        ))}
+                      </select>
+                    </label>
                     {[
                       ['deduplicate', '去重'],
                       ['rerank', '重排'],
@@ -510,6 +589,19 @@ const Search = () => {
                             className="col-span-2 w-full border rounded px-1.5 py-1 text-xs"
                           />
                         )}
+                        {compressMethod === 'llm' && (
+                          <label className="col-span-2 block text-xs text-gray-500">
+                            LLM 压缩前 N 条
+                            <input
+                              type="number"
+                              min="0"
+                              max="20"
+                              value={llmCompressTopN}
+                              onChange={(e) => setLlmCompressTopN(parseInt(e.target.value) || 0)}
+                              className="mt-1 w-full border rounded px-1.5 py-1 text-xs"
+                            />
+                          </label>
+                        )}
                       </div>
                     )}
                     <label className="block text-xs text-gray-500">
@@ -576,6 +668,11 @@ const Search = () => {
 
         {/* Right Panel - Results */}
         <div className="col-span-9 border rounded-lg bg-white shadow-sm">
+          {postprocessTrace.length > 0 && (
+            <div className="p-4 pb-0">
+              <PostprocessTrace trace={postprocessTrace} />
+            </div>
+          )}
           {results.length > 0 ? (
             <div className="p-4">
               <div className="flex justify-between items-center mb-4">

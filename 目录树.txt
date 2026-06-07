@@ -1,0 +1,785 @@
+Folder PATH listing for volume OS
+Volume serial number is 00000052 EC4D:AE5B
+C:.
+│   .gitignore
+│   eslint.config.js
+│   example.py
+│   index.html
+│   package-lock.json
+│   package.json
+│   README.md
+│   requirements_win.txt
+│   vite.config.js
+│   目录树.txt
+│   
+├───backend
+│   │   main.py
+│   │   note.txt
+│   │   package-backup.txt
+│   │   schemas.py
+│   │   test.py
+│   │   
+│   ├───01-chunked-docs
+│   │       074_by_pages_20260316180643.json
+│   │       2020300004006-孙峥杰-基于小尺寸 LLM 的法律专业对话机器人的研究与应用 4_by_paragraphs_20260313112911.json
+│   │       20250802-Python包管理器“uv”安装及使用教程_by_pages_20260508170921.json
+│   │       20250802-Python包管理器“uv”安装及使用教程_by_pages_20260509094356.json
+│   │       20250802-Python包管理器“uv”安装及使用教程_by_pages_20260509100255.json
+│   │       20250802-Python包管理器“uv”安装及使用教程_by_pages_20260510143348.json
+│   │       2510.16872v1_by_paragraphs_20260412103410.json
+│   │       2510.16872v1_by_sentences_20260412103600.json
+│   │       Adaptive REST API Testing with Reinforcement Learning_by_pages_20260416103643.json
+│   │       AutoRestTest A Tool for Automated REST API_by_pages_20260323174048.json
+│   │       phone_by_pages_20260510170028.json
+│   │       phone_by_paragraphs_20260508135929.json
+│   │       phone_by_paragraphs_20260508142830.json
+│   │       phone_by_paragraphs_20260510165455.json
+│   │       phone_by_sentences_20260510165505.json
+│   │       phone_fixed_size_20260510165521.json
+│   │       phone_fixed_size_20260510165527.json
+│   │       phone_fixed_size_20260510165532.json
+│   │       phone_fixed_size_20260510165542.json
+│   │       phone_fixed_size_20260510165553.json
+│   │       phone_fixed_size_20260510165559.json
+│   │       phone_fixed_size_20260510165610.json
+│   │       Python包管理器uv安装及使用教程_by_pages_20260510122752.json
+│   │       test_fixed_size_20241127011223.json
+│   │       阿里云百炼API key 申请及使用流程_by_sentences_20260604093937.json
+│   │       阿里云百炼API key 申请及使用流程_semantic_20260604100848.json
+│   │       
+│   ├───01-loaded-docs
+│   │       074_pymupdf_20250310205042.json
+│   │       074_unstructured_fast_basic_20250310205025.json
+│   │       074_unstructured_hi_res_by_title_20250102191548.json
+│   │       2020300004006-孙峥杰-基于小尺寸 LLM 的法律专业对话机器人的研究与应用 4_pymupdf_20260313111521.json
+│   │       20250802-Python包管理器“uv”安装及使用教程_pymupdf_20260308112849.json
+│   │       20250802-Python包管理器“uv”安装及使用教程_pymupdf_20260406185606.json
+│   │       20250802-Python包管理器“uv”安装及使用教程_pymupdf_20260406185837.json
+│   │       20250802-Python包管理器“uv”安装及使用教程_pymupdf_20260508170901.json
+│   │       20250802-Python包管理器“uv”安装及使用教程_pymupdf_20260509094334.json
+│   │       20250802-Python包管理器“uv”安装及使用教程_pymupdf_20260509100153.json
+│   │       20250802-Python包管理器“uv”安装及使用教程_pymupdf_20260510143334.json
+│   │       20250802-Python包管理器“uv”安装及使用教程_pymupdf_20260510143340.json
+│   │       20250802-Python包管理器“uv”安装及使用教程_pypdf_20260510143334.json
+│   │       2408.08594v1_pymupdf_20260308112903.json
+│   │       2408.08594v1_pymupdf_20260316135354.json
+│   │       2408.08594v1_pymupdf_20260316141424.json
+│   │       2408.08594v1_pymupdf_20260316180011.json
+│   │       2408.08594v1_pymupdf_20260316180046.json
+│   │       2408.08594v1_pymupdf_20260316180054.json
+│   │       2408.08594v1_pymupdf_20260316180204.json
+│   │       2408.08594v1_pymupdf_20260316180400.json
+│   │       2408.08594v1_pymupdf_20260316185837.json
+│   │       2408.08594v1_pymupdf_20260319161532.json
+│   │       2408.08594v1_pymupdf_20260320150546.json
+│   │       2408.08594v1_pymupdf_20260321154200.json
+│   │       2408.08594v1_pymupdf_20260321162031.json
+│   │       2408.08594v1_pymupdf_20260321170410.json
+│   │       2408.08594v1_pymupdf_20260321170746.json
+│   │       2408.08594v1_pymupdf_20260322100534.json
+│   │       2408.08594v1_pymupdf_20260322102627.json
+│   │       2408.08594v1_pymupdf_20260323180714.json
+│   │       2408.08594v1_pymupdf_20260325125227.json
+│   │       2408.08594v1_pymupdf_20260325125610.json
+│   │       2408.08594v1_pymupdf_20260325143039.json
+│   │       2408.08594v1_pymupdf_20260325143040.json
+│   │       2408.08594v1_pymupdf_20260325143327.json
+│   │       2408.08594v1_pymupdf_20260325144120.json
+│   │       2408.08594v1_pymupdf_20260325144125.json
+│   │       2408.08594v1_pymupdf_20260325144609.json
+│   │       2408.08594v1_pymupdf_20260325145538.json
+│   │       2408.08594v1_pymupdf_20260325145540.json
+│   │       2408.08594v1_pymupdf_20260325145542.json
+│   │       2408.08594v1_pymupdf_20260325150035.json
+│   │       2408.08594v1_pymupdf_20260325150429.json
+│   │       2408.08594v1_pymupdf_20260325150832.json
+│   │       2408.08594v1_pymupdf_20260325150839.json
+│   │       2408.08594v1_pymupdf_20260325150931.json
+│   │       2408.08594v1_pymupdf_20260325151347.json
+│   │       2408.08594v1_pymupdf_20260325151352.json
+│   │       2408.08594v1_pymupdf_20260325151813.json
+│   │       2408.08594v1_pymupdf_20260325152105.json
+│   │       2408.08594v1_pymupdf_20260325152637.json
+│   │       2408.08594v1_pymupdf_20260327141503.json
+│   │       2408.08594v1_pymupdf_20260327141747.json
+│   │       2408.08594v1_pymupdf_20260327142532.json
+│   │       2408.08594v1_pymupdf_20260327144443.json
+│   │       2408.08594v1_pymupdf_20260327144532.json
+│   │       2408.08594v1_pymupdf_20260327153006.json
+│   │       2408.08594v1_pymupdf_20260330170032.json
+│   │       2408.08594v1_pymupdf_20260330170225.json
+│   │       2408.08594v1_pymupdf_20260330170227.json
+│   │       2408.08594v1_pymupdf_20260405185225.json
+│   │       2408.08594v1_pymupdf_20260405185620.json
+│   │       2408.08594v1_pymupdf_20260405190301.json
+│   │       2408.08594v1_pymupdf_20260405190635.json
+│   │       2408.08594v1_pymupdf_20260405190811.json
+│   │       2408.08594v1_pymupdf_20260405195031.json
+│   │       2408.08594v1_pymupdf_20260406182813.json
+│   │       2408.08594v1_pymupdf_20260406182833.json
+│   │       2408.08594v1_pymupdf_20260406183027.json
+│   │       2408.08594v1_pymupdf_20260406184917.json
+│   │       2408.08594v1_pymupdf_20260406185600.json
+│   │       2408.08594v1_pymupdf_20260406185827.json
+│   │       2408.08594v1_pymupdf_20260406190509.json
+│   │       2408.08594v1_pymupdf_20260409083405.json
+│   │       2408.08594v1_pymupdf_20260409105002.json
+│   │       2408.08594v1_pypdf_20260313110543.json
+│   │       2408.08594v1_pypdf_20260319162414.json
+│   │       2408.08594v1_pypdf_20260325144122.json
+│   │       2408.08594v1_pypdf_20260325144124.json
+│   │       2408.08594v1_pypdf_20260325150933.json
+│   │       2408.08594v1_pypdf_20260325150936.json
+│   │       2408.08594v1_pypdf_20260330170227.json
+│   │       2408.08594v1_unstructured_fast_basic_20260308112914.json
+│   │       2501.DeepSeek-R1- Incentivizing Reasoning Capability in LLMs via Reinforcement Learning_unstructured_fast_basic_20250214164434.json
+│   │       2501.DeepSeek-R1- Incentivizing Reasoning Capability in LLMs via Reinforcement Learning_unstructured_hi_res_by_title_20250214164559.json
+│   │       2510.16872v1_pymupdf_20260313111449.json
+│   │       2510.16872v1_pymupdf_20260316135335.json
+│   │       2510.16872v1_pymupdf_20260316141434.json
+│   │       2510.16872v1_pymupdf_20260316161103.json
+│   │       2510.16872v1_pymupdf_20260316161111.json
+│   │       2510.16872v1_pymupdf_20260316180103.json
+│   │       2510.16872v1_pymupdf_20260319163339.json
+│   │       2510.16872v1_pymupdf_20260320100754.json
+│   │       2510.16872v1_pymupdf_20260320102027.json
+│   │       2510.16872v1_pymupdf_20260321103216.json
+│   │       2510.16872v1_pymupdf_20260321103512.json
+│   │       2510.16872v1_pymupdf_20260321104628.json
+│   │       2510.16872v1_pymupdf_20260321153340.json
+│   │       2510.16872v1_pymupdf_20260321155426.json
+│   │       2510.16872v1_pymupdf_20260321160447.json
+│   │       2510.16872v1_pymupdf_20260321161409.json
+│   │       2510.16872v1_pymupdf_20260321163801.json
+│   │       2510.16872v1_pymupdf_20260321164328.json
+│   │       2510.16872v1_pymupdf_20260321165927.json
+│   │       2510.16872v1_pymupdf_20260322100036.json
+│   │       2510.16872v1_pymupdf_20260322150427.json
+│   │       2510.16872v1_pymupdf_20260325121230.json
+│   │       2510.16872v1_pymupdf_20260325121427.json
+│   │       2510.16872v1_pymupdf_20260325121741.json
+│   │       2510.16872v1_pymupdf_20260325122431.json
+│   │       2510.16872v1_pymupdf_20260325122811.json
+│   │       2510.16872v1_pymupdf_20260325125229.json
+│   │       2510.16872v1_pymupdf_20260325125230.json
+│   │       2510.16872v1_pymupdf_20260325125231.json
+│   │       2510.16872v1_pymupdf_20260325143041.json
+│   │       2510.16872v1_pymupdf_20260325144031.json
+│   │       2510.16872v1_pymupdf_20260325145554.json
+│   │       2510.16872v1_pymupdf_20260325145555.json
+│   │       2510.16872v1_pymupdf_20260325152148.json
+│   │       2510.16872v1_pymupdf_20260327141529.json
+│   │       2510.16872v1_pymupdf_20260405182909.json
+│   │       2510.16872v1_pymupdf_20260405184024.json
+│   │       2510.16872v1_pymupdf_20260405185225.json
+│   │       2510.16872v1_pymupdf_20260405190640.json
+│   │       2510.16872v1_pymupdf_20260405192918.json
+│   │       2510.16872v1_pymupdf_20260405192919.json
+│   │       2510.16872v1_pymupdf_20260405195034.json
+│   │       2510.16872v1_pymupdf_20260405195035.json
+│   │       2510.16872v1_pymupdf_20260405195036.json
+│   │       2510.16872v1_pymupdf_20260408165135.json
+│   │       2510.16872v1_pymupdf_20260408210425.json
+│   │       2510.16872v1_pymupdf_20260409082806.json
+│   │       2510.16872v1_pymupdf_20260409102413.json
+│   │       2510.16872v1_pymupdf_20260409102640.json
+│   │       2510.16872v1_pymupdf_20260409102848.json
+│   │       2510.16872v1_pymupdf_20260409103504.json
+│   │       2510.16872v1_pymupdf_20260409103854.json
+│   │       2510.16872v1_pymupdf_20260409105438.json
+│   │       2510.16872v1_pymupdf_20260409112238.json
+│   │       2510.16872v1_pymupdf_20260409112239.json
+│   │       2510.16872v1_pymupdf_20260412103254.json
+│   │       2510.16872v1_pymupdf_20260412141412.json
+│   │       2510.16872v1_pymupdf_20260416103441.json
+│   │       2510.16872v1_pypdf_20260308113028.json
+│   │       2510.16872v1_pypdf_20260316150617.json
+│   │       2510.16872v1_pypdf_20260316160743.json
+│   │       2510.16872v1_pypdf_20260316160802.json
+│   │       2510.16872v1_pypdf_20260316180022.json
+│   │       2510.16872v1_pypdf_20260316180042.json
+│   │       2510.16872v1_pypdf_20260319161953.json
+│   │       2510.16872v1_pypdf_20260319163336.json
+│   │       2510.16872v1_pypdf_20260325145553.json
+│   │       2510.16872v1_unstructured_fast_basic_20260412141603.json
+│   │       Adaptive REST API Testing with Reinforcement Learning_pymupdf_20260416103552.json
+│   │       AutoRestTest A Tool for Automated REST API_pymupdf_20260323173742.json
+│   │       AutoRestTest A Tool for Automated REST API_pymupdf_20260325142515.json
+│   │       AutoRestTest A Tool for Automated REST API_unstructured_fast_basic_20260412141617.json
+│   │       DeepSeek-R1-技术报告中文版_pypdf_20250312225830.json
+│   │       DeepSeek_unstructured_fast_basic_20250214185131.json
+│   │       DeepSeek_unstructured_fast_by_title_20250214185252.json
+│   │       DeepSeek_unstructured_hi_res_by_title_20250214203832.json
+│   │       FY2024-NVIDIA-Corporate-Sustainability-Report_pymupdf_20250319223532.json
+│   │       ht_pymupdf_20260313111613.json
+│   │       phone_pymupdf_20260508135854.json
+│   │       phone_pymupdf_20260510165441.json
+│   │       phone_pymupdf_20260510170014.json
+│   │       phone_pymupdf_20260510170441.json
+│   │       phone_unstructured_fast_basic_20260508142804.json
+│   │       Python包管理器uv安装及使用教程_pymupdf_20260510122741.json
+│   │       Python包管理器uv安装及使用教程_pymupdf_20260510143550.json
+│   │       Python包管理器uv安装及使用教程_pymupdf_20260510144725.json
+│   │       Python包管理器uv安装及使用教程_pymupdf_20260510144727.json
+│   │       Python包管理器uv安装及使用教程_pymupdf_20260510145153.json
+│   │       Python包管理器uv安装及使用教程_pymupdf_20260510145809.json
+│   │       Python包管理器uv安装及使用教程_pymupdf_20260510150628.json
+│   │       Python包管理器uv安装及使用教程_pymupdf_20260510160227.json
+│   │       Python包管理器uv安装及使用教程_pymupdf_20260510165022.json
+│   │       Python包管理器uv安装及使用教程_pypdf_20260510144726.json
+│   │       Python包管理器uv安装及使用教程_pypdf_20260510144727.json
+│   │       Python包管理器uv安装及使用教程_pypdf_20260510144729.json
+│   │       Python包管理器uv安装及使用教程_pypdf_20260510145154.json
+│   │       zs_pymupdf_20260313111554.json
+│   │       “AI书记员”上岗 助力庭审记录更精准快捷_pypdf_20260308113007.json
+│   │       人工智能赋能高等教育人才培养-综合组培训证书-AUZG681171_pypdf_20260313110555.json
+│   │       加快人工智能探索应用步伐 深度赋能检察数字化转型_pymupdf_20260313110631.json
+│   │       加快人工智能探索应用步伐 深度赋能检察数字化转型_pymupdf_20260316161136.json
+│   │       翻译_pymupdf_20260313111657.json
+│   │       阿里云百炼API key 申请及使用流程_pymupdf_20260604093835.json
+│   │       
+│   ├───02-embedded-docs
+│   │       074_bedrock_20250215001607.json
+│   │       074_huggingface_20250103112031.json
+│   │       074_huggingface_20250103113115.json
+│   │       074_huggingface_20260316180610.json
+│   │       074_huggingface_20260316185931.json
+│   │       074_huggingface_20260604102113.json
+│   │       20250802-Python包管理器“uv”安装及使用教程_huggingface_20260509094453.json
+│   │       20250802-Python包管理器“uv”安装及使用教程_huggingface_20260509100711.json
+│   │       20250802-Python包管理器“uv”安装及使用教程_huggingface_20260510143419.json
+│   │       20250802-Python包管理器“uv”安装及使用教程_huggingface_20260510164358.json
+│   │       2501_DeepSeek_R1_openai_20250214164811.json
+│   │       Adaptive REST API Testing with Reinforcement Learning_huggingface_20260416103742.json
+│   │       Adaptive REST API Testing with Reinforcement Learning_huggingface_20260416103957.json
+│   │       AutoRestTest A Tool for Automated REST API_huggingface_20260323174321.json
+│   │       AutoRestTest A Tool for Automated REST API_huggingface_20260323174358.json
+│   │       AutoRestTest A Tool for Automated REST API_huggingface_20260409120043.json
+│   │       DeepSeek-R1-技术报告中文版_huggingface_20250312225906.json
+│   │       DeepSeek_bedrock_20250214204218.json
+│   │       DeepSeek_huggingface_20250214185441.json
+│   │       phone_huggingface_20260508140022.json
+│   │       phone_huggingface_20260508140507.json
+│   │       phone_huggingface_20260508142903.json
+│   │       phone_huggingface_20260510165156.json
+│   │       phone_huggingface_20260510170105.json
+│   │       Python包管理器uv安装及使用教程_huggingface_20260510122815.json
+│   │       Python包管理器uv安装及使用教程_huggingface_20260510160327.json
+│   │       Python包管理器uv安装及使用教程_huggingface_20260510165058.json
+│   │       阿里云百炼API key 申请及使用流程_huggingface_20260604101202.json
+│   │       
+│   ├───03-vector-store
+│   │   │   .langchain_milvus.db.lock
+│   │   │   
+│   │   └───chromadb
+│   │       │   chroma.sqlite3
+│   │       │   
+│   │       ├───001e54d1-e482-4d5f-954c-cd4a1bf70fa0
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───07d8cb8f-d37d-4d3a-a9bb-a70af3ed6985
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───0acd4fd4-0189-41f7-a685-1dd6916cb451
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───10ee9f5d-29ac-4645-8cb1-8d5180a6f8ac
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───14108662-0b2c-417d-a165-b62c55668c79
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───18935480-2630-4712-83ba-d34eea12ba16
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───2302a6f4-b27d-49a3-a822-846776ecfa59
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───24edacd9-b697-41fa-a356-3d8f4319f3b4
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───2a5c501b-4bfb-49d3-9542-9662a5549791
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───31e4724a-7fbe-4550-8eef-c8ed960c4a2d
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───345cd802-1099-46cf-8508-69bc6a8cb321
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───398d5d35-9d44-4214-bb2f-96f13c694f0e
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───3ae68cf0-ca36-4ea4-a38c-fe9eacd88296
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───45c90683-a42c-4ff2-a23a-d7b723ec1fd3
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───4939615f-da12-41d6-901e-ea0da5cc9a73
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───4b2ad95b-e17c-451e-a7de-c71d7b2b6b39
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───4e077759-ae24-4a63-a935-7977405eb454
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───4fa57b5d-c038-47cd-8029-c578cfdf2351
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───51ae9f78-a04e-4f25-9c4c-04fbe3ac0f95
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───5284650a-97e1-474a-bca3-95550c34860d
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───63a38a18-8bbd-4321-947c-afb0d594797c
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───6e9ac563-c632-4a90-ada7-830ad1db46e5
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───712452db-2c13-41c4-bf83-b00e03fb482d
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───71f902f7-299e-45d5-9f47-824741fb8c00
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───7bd59681-a915-4ee7-9be3-dda1106054c7
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───7c1af386-41de-4dbf-b5ea-8efc511f457f
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───8daa0bd8-1f12-4309-81f2-1cb8514e9e4d
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───90028fbb-9b87-416b-9d55-b1727003fa5f
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───93f7cce0-8cfe-4603-a500-738e51618d23
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───95682ec2-99a7-4018-88bb-c9bcd02bb638
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───aa63a957-cb8f-4c24-bbd2-fe9c3a9ddd74
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───af825e56-f337-47e3-a91b-a299552898be
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───b817b169-40ae-425b-8686-69e278d12719
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───bb2584d8-41c1-4a62-bc22-6d3187fc7fac
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───cc8f9a7b-5849-4f96-a4fa-4f093eafc10c
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───d431aa0a-25c2-4fb1-8590-43bf46b77c07
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───d7244cfd-962a-450c-ba5e-44500ad5fd98
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───dede2005-71de-42f8-9ecf-464ff1de008f
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───e045d641-717d-496c-bbcc-d14147066ae5
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───e20be2b2-3a86-4493-87e2-e4841c306e2e
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───e6416484-2726-4944-8e95-ed7bdbdc4a55
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───e7833eff-46a9-44c6-ac89-8fb76458dd99
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───e83de8d9-b018-4121-8c83-74f73eb63b08
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───ea27f251-5d8f-4115-b8c0-b76e12cf982c
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       ├───eb5598f8-a3ae-4cb9-88dd-c4e030029d46
+│   │       │       data_level0.bin
+│   │       │       header.bin
+│   │       │       length.bin
+│   │       │       link_lists.bin
+│   │       │       
+│   │       └───fa991a14-6f16-4365-bb3f-ae0a3c3b38b2
+│   │               data_level0.bin
+│   │               header.bin
+│   │               length.bin
+│   │               link_lists.bin
+│   │               
+│   ├───04-search-results
+│   │       search_Adaptive_REST_API_Testing_with_Reinforcement_Learning_huggingface_20260416104015_20260416104317.json
+│   │       search_Adaptive_REST_API_Testing_with_Reinforcement_Learning_huggingface_20260416104015_20260416104722.json
+│   │       search_Adaptive_REST_API_Testing_with_Reinforcement_Learning_huggingface_20260416104015_20260416155318.json
+│   │       search_aliyunbailianAPI_key_shenqingjishiyo_huggingface_20260604104120_20260604105444.json
+│   │       search_AutoRestTest_A_Tool_for_Automated_REST_API_huggingface_20260409112248_20260411154146.json
+│   │       search_DeepSeek_huggingface_20250214185507_20250214185610.json
+│   │       search_DeepSeek_huggingface_20250214230136_20250214230328.json
+│   │       search_DeepSeek_R1_openai_20250214170740_20250214174407.json
+│   │       search_phone_huggingface_20260508140519_20260508140650.json
+│   │       search_phone_huggingface_20260508140519_20260508140652.json
+│   │       search_phone_huggingface_20260508140519_20260508140708.json
+│   │       search_phone_huggingface_20260510170119_20260510170705.json
+│   │       search_phone_huggingface_20260510170119_20260510170821.json
+│   │       
+│   ├───05-generation-results
+│   │       generation_aliyun_qwen-turbo_10s_20260501171807_False.json
+│   │       generation_aliyun_qwen-turbo_11s_20260508112717_True.json
+│   │       generation_aliyun_qwen-turbo_11s_20260508141021_False.json
+│   │       generation_aliyun_qwen-turbo_11s_20260508142637_False.json
+│   │       generation_aliyun_qwen-turbo_11s_20260508143326_True.json
+│   │       generation_aliyun_qwen-turbo_12s_20260501200254_True.json
+│   │       generation_aliyun_qwen-turbo_12s_20260508140744_True.json
+│   │       generation_aliyun_qwen-turbo_12s_20260508140824_False.json
+│   │       generation_aliyun_qwen-turbo_13s_20260501185610_True.json
+│   │       generation_aliyun_qwen-turbo_14s_20260501200503_True.json
+│   │       generation_aliyun_qwen-turbo_16s_20260501201110_True.json
+│   │       generation_aliyun_qwen-turbo_17s_20260508143504_False.json
+│   │       generation_aliyun_qwen-turbo_2s_20260510171306_True.json
+│   │       generation_aliyun_qwen-turbo_3s_20260508143407_False.json
+│   │       generation_aliyun_qwen-turbo_6s_20260510171433_False.json
+│   │       generation_aliyun_qwen-turbo_8s_20260501201456_True.json
+│   │       generation_aliyun_qwen-turbo_8s_20260508141157_False.json
+│   │       generation_aliyun_qwen-turbo_8s_20260508141233_False.json
+│   │       generation_aliyun_qwen-turbo_9s_20260501170253_True.json
+│   │       generation_aliyun_qwen-turbo_9s_20260501201219_False.json
+│   │       generation_aliyun_qwen3.6-plus_32s_20260510170942_True.json
+│   │       generation_aliyun_qwen3.6-plus_56s_20260510171552_True.json
+│   │       generation_aliyun_qwen3.6-plus_60s_20260510171142_False.json
+│   │       generation_deepseek_deepseek-chat_20250218132538.json
+│   │       generation_deepseek_deepseek-r1_20250218135916.json
+│   │       generation_deepseek_deepseek-v3_0s_20260604123643_False.json
+│   │       generation_deepseek_deepseek-v3_1s_20260604123916_False.json
+│   │       generation_deepseek_deepseek-v3_1s_20260604123949_False.json
+│   │       generation_deepseek_deepseek-v3_1s_20260604124626_False.json
+│   │       generation_deepseek_deepseek-v3_20250219202500.json
+│   │       generation_deepseek_deepseek-v3_2s_20260604123541_False.json
+│   │       generation_deepseek_deepseek-v3_2s_20260604123621_False.json
+│   │       generation_deepseek_deepseek-v3_2s_20260604123637_False.json
+│   │       generation_deepseek_deepseek-v3_2s_20260604125118_False.json
+│   │       generation_deepseek_deepseek-v3_4s_20260604122750_False.json
+│   │       generation_deepseek_deepseek-v3_5s_20260604123018_False.json
+│   │       generation_deepseek_deepseek-v3_6s_20260604105642_True.json
+│   │       generation_deepseek_deepseek-v3_6s_20260604122618_False.json
+│   │       generation_huggingface_DeepSeek-R1-Distill-Qwen_20250214200701.json
+│   │       generation_huggingface_DeepSeek-R1-Distill-Qwen_20260318144937.json
+│   │       generation_huggingface_DeepSeek-R1-Distill-Qwen_20260318145629.json
+│   │       generation_huggingface_DeepSeek-R1-Distill-Qwen_20260318151255.json
+│   │       generation_huggingface_DeepSeek-R1-Distill-Qwen_20260318151800.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_110s_20260416112321_True.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_117s_20260322103058_True.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_123s_20260322103546_False.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_127s_20260322150702_True.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_176s_20260411154620_True.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_20260318170505.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_20260318183126.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_20260319151738.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_20260319152636.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_20260319162538.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_20260319163603.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_20260320101004.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_20260320102221.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_20260320102347.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_20260321103611.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_20260321103757.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_20260321104732.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_20260321104921.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_20260321105509.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_20260321105703.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_20260321153434_True.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_20260321153707_True.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_20260321154331_False.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_20260321162135_True.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_20260321163035_False.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_20260321163849_True.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_20260321164421_True.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_20260321170017_True.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_20260321170513_True.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_20260321170554_False.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_20260321170833_True.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_20260321171029_False.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_20260322100633_True.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_20260322100809_False.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_20260322101100_True.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_20260322101719_False.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_34s_20260322151832_False.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_420s_20260411155557_False.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_451s_20260416112002_False.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_484s_20260416105550_True.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_557s_20260416110612_False.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_68s_20260501160315_True.json
+│   │       generation_huggingface_Qwen-Qwen3-1.7B_79s_20260323180906_True.json
+│   │       
+│   ├───models
+│   │   └───bge-small-zh-v1.5
+│   ├───services
+│   │   │   chunking_service.py
+│   │   │   embedding_service.py
+│   │   │   generation_service.py
+│   │   │   loading_service.py
+│   │   │   parsing_service.py
+│   │   │   search_service.py
+│   │   │   vector_store_service.py
+│   │   │   
+│   │   ├───archive
+│   │   │       vector_store_service_langchain.py
+│   │   │       
+│   │   └───__pycache__
+│   │           chunking_service.cpython-311.pyc
+│   │           chunking_service.cpython-39.pyc
+│   │           embedding_service.cpython-311.pyc
+│   │           embedding_service.cpython-39.pyc
+│   │           generation_service.cpython-311.pyc
+│   │           generation_service.cpython-39.pyc
+│   │           loading_service.cpython-311.pyc
+│   │           loading_service.cpython-312.pyc
+│   │           loading_service.cpython-39.pyc
+│   │           parsing_service.cpython-311.pyc
+│   │           parsing_service.cpython-39.pyc
+│   │           search_service.cpython-311.pyc
+│   │           search_service.cpython-39.pyc
+│   │           vector_store_service.cpython-311.pyc
+│   │           vector_store_service.cpython-39.pyc
+│   │           
+│   ├───sourse
+│   │       course_qa.json
+│   │       
+│   ├───temp
+│   │       A Multi-Task Embedder For Retrieval Augmented LLMs.pdf
+│   │       C-Pack_ Packed Resources For General Chinese Embeddings.pdf
+│   │       
+│   ├───utils
+│   │   │   config.py
+│   │   │   model_utils.py
+│   │   │   SemmanticTextSplitter.py
+│   │   │   
+│   │   └───__pycache__
+│   │           config.cpython-311.pyc
+│   │           config.cpython-39.pyc
+│   │           model_utils.cpython-311.pyc
+│   │           model_utils.cpython-39.pyc
+│   │           
+│   └───__pycache__
+│           main.cpython-311.pyc
+│           main.cpython-312.pyc
+│           main.cpython-39.pyc
+│           schemas.cpython-311.pyc
+│           test.cpython-39.pyc
+│           
+├───frontend
+│   │   .gitignore
+│   │   eslint.config.js
+│   │   index.html
+│   │   note.txt
+│   │   package-lock.json
+│   │   package.json
+│   │   postcss.config.js
+│   │   README.md
+│   │   tailwind.config.js
+│   │   vite.config.js
+│   │   
+│   ├───public
+│   │       vite.svg
+│   │       
+│   └───src
+│       │   App.css
+│       │   App.jsx
+│       │   index.css
+│       │   main.jsx
+│       │   
+│       ├───assets
+│       │       01.jpg
+│       │       02.jpg
+│       │       03.jpg
+│       │       04.jpg
+│       │       05.jpg
+│       │       06.jpg
+│       │       07.jpg
+│       │       08.jpg
+│       │       09.jpg
+│       │       10.jpg
+│       │       raglogo.png
+│       │       
+│       ├───components
+│       │       RandomImage.jsx
+│       │       Sidebar.jsx
+│       │       
+│       ├───config
+│       │       config.js
+│       │       
+│       ├───pages
+│       │       ChunkFile.jsx
+│       │       EmbeddingFile.jsx
+│       │       Generation.jsx
+│       │       ImportCourse.jsx
+│       │       Indexing.jsx
+│       │       LoadFile.jsx
+│       │       ParseFile.jsx
+│       │       QA.jsx
+│       │       Search.jsx
+│       │       
+│       └───temp
+│               App.jsx
+│               
+├───images
+│       RAG-fontend.png
+│       
+├───public
+│       vite.svg
+│       
+├───src
+│   │   App.css
+│   │   App.jsx
+│   │   index.css
+│   │   main.jsx
+│   │   
+│   └───assets
+│           raglogo.png
+│           react.svg
+│           
+└───__pycache__
+        example.cpython-39.pyc
+        

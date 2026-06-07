@@ -205,10 +205,32 @@ class SearchService:
             results_count=len(results['ids'][0])
             logger.info(f"Raw search results count: {results_count}")
 
+            # === 新增：用于记录已经扩展过的 parent_id，防止给 LLM 喂入重复的父块 ===
+            seen_parent_ids = set()
+
             for hit in range(results_count):
                 hit_score=1-results['distances'][0][hit]
-                logger.info(f"Processing hit - Score: {hit_score}, Word Count: {results['metadatas'][0][hit].get('word_count')}")
+                logger.info(f"Processing hit - Score: {hit_score}")
+                
                 if hit_score >= threshold:
+                    meta = results['metadatas'][0][hit]
+                    original_text = results.get('documents')[0][hit]
+                    
+                    # === 核心逻辑：如果是父子分块，实施 "Small-to-Big" 扩展 ===
+                    parent_id = meta.get('parent_id')
+                    parent_content = meta.get('parent_content')
+                    
+                    if parent_id and parent_content:
+                        if parent_id in seen_parent_ids:
+                            logger.info(f"Skipping duplicate parent context for parent_id: {parent_id}")
+                            continue  # 同一个大段落已经被命中过，去重跳过！
+                            
+                        seen_parent_ids.add(parent_id)
+                        # 用大段落(父块) 替换 检索到的小短句(子块)
+                        display_text = f"【来源扩展段落】\n{parent_content}"
+                    else:
+                        display_text = original_text
+                    # ===========================================================
                     processed_results.append({
                         "text": results.get('documents')[0][hit],
                         "score": float(hit_score),

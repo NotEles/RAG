@@ -18,7 +18,7 @@ cd backend
 pip install -r ../requirements_win.txt
 
 # 启动后端（端口 8001）
-uvicorn main:app --reload --port 8001 --host 0.0.0.0
+uvicorn main:app --host 127.0.0.1 --port 8001
 ```
 
 > 向量数据库默认使用 **Chroma**（本地持久化，无需额外安装）。
@@ -68,16 +68,27 @@ npm run dev
 
 ---
 
-### 2. 文件导入（`/import`）
+### 2. 文件导入与解析优化（`/import`）
 
-将 PDF 或 JSON 文件直接导入到名为 `course` 的 Chroma 向量数据库，无需经历七步流程。
+在原有 PDF 智能解析能力基础上，新增了多格式文件解析入口，可将 PDF、JSON、Markdown、DOCX、图片等文件直接导入到名为 `course` 的 Chroma 向量数据库，无需经历七步流程。系统会根据文件扩展名自动选择解析方式，并统一转换为 RAG 后续可用的文本块。
 
 **支持的选项：**
 
-- **文件类型**：PDF、JSON（自动识别格式）
+- **文件类型**：PDF、JSON/JSONL、Markdown、DOCX、TXT、CSV、PNG/JPG 等图片格式（自动识别格式）
 - **加载方式**（PDF）：PyMuPDF、PyPDF、PDFPlumber、Unstructured
 - **分块方式**：按页、固定大小、按段落、按句子、语义分块
 - **编码方式**：HuggingFace（本地）或 OpenAI（需填 API Key）
+
+**多格式解析说明：**
+
+| 文件格式 | 处理方式 |
+|------|---------|
+| PDF | 保留原有 PyMuPDF、PyPDF、PDFPlumber、Unstructured 多策略解析 |
+| JSON / JSONL | 自动提取结构化文本，兼容标准 chunks 与问答数据格式 |
+| Markdown / TXT | 直接读取文本内容，Markdown 会按标题结构切分 |
+| DOCX | 提取段落、标题和表格文本，需要 `python-docx` |
+| CSV | 按行提取字段内容并转换为文本 |
+| PNG / JPG 等图片 | 通过 OCR 提取图片文字，需要 `pillow`、`pytesseract` 和系统 Tesseract OCR |
 
 **JSON 文件支持三种格式：**
 

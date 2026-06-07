@@ -50,7 +50,7 @@ const ParseFile = () => {
     const file = e.target.files[0];
     if (file) {
       setFile(file);
-      const baseName = file.name.replace('.pdf', '');
+      const baseName = file.name.replace(/\.[^/.]+$/, '');
       setDocName(baseName);
     }
   };
@@ -69,7 +69,7 @@ const ParseFile = () => {
               <label className="block text-sm font-medium mb-1">选择PDF文件</label>
               <input
                 type="file"
-                accept=".pdf"
+                accept=".pdf,.json,.jsonl,.docx,.md,.markdown,.txt,.csv,.png,.jpg,.jpeg,.bmp,.tiff,.tif,.webp"
                 onChange={handleFileSelect}
                 className="block w-full border rounded px-3 py-2"
                 required
@@ -87,6 +87,7 @@ const ParseFile = () => {
                 <option value="pypdf">PyPDF</option>
                 <option value="unstructured">Unstructured</option>
                 <option value="pdfplumber">PDF Plumber</option>
+                <option value="auto">Auto</option>
               </select>
             </div>
 

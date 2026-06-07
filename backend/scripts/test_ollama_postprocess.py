@@ -62,10 +62,11 @@ def main() -> int:
     )
 
     service = PostRetrievalService()
-    results = service.process(args.query, build_results(), config)
+    results, trace = service.process(args.query, build_results(), config)
 
     print(f"model={args.model}")
     print(f"query={args.query}")
+    print(f"trace_steps={[step.get('step') for step in trace]}")
     print(f"result_count={len(results)}")
     for idx, item in enumerate(results, start=1):
         meta = item.get("metadata", {})

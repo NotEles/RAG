@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import PostprocessTrace from '../components/PostprocessTrace';
 import { apiBaseUrl as API_BASE_URL } from '../config/config';
 
 const PROVIDERS = [
@@ -35,7 +36,41 @@ const MODELS = {
   ],
 };
 
-const DEFAULT_POST_STRATEGIES = ['deduplicate', 'rerank', 'compress', 'context_pack'];
+const POST_PRESETS = {
+  local_quality: {
+    label: '质量优先',
+    strategies: ['deduplicate', 'rerank', 'compress', 'context_pack'],
+    rerankMethod: 'llm',
+    compressMethod: 'llm',
+    fetchK: 20,
+    rerankTopK: 5,
+    llmCompressTopN: 2,
+    maxContextChars: 8000,
+    maxContextTokens: 3000,
+  },
+  speed: {
+    label: '速度优先',
+    strategies: ['deduplicate', 'rerank', 'context_pack'],
+    rerankMethod: 'cross_encoder',
+    compressMethod: 'extractive',
+    fetchK: 12,
+    rerankTopK: 5,
+    llmCompressTopN: 2,
+    maxContextChars: 8000,
+    maxContextTokens: 3000,
+  },
+  offline: {
+    label: '本地离线',
+    strategies: ['deduplicate', 'rerank', 'compress', 'context_pack'],
+    rerankMethod: 'cross_encoder',
+    compressMethod: 'extractive',
+    fetchK: 16,
+    rerankTopK: 5,
+    llmCompressTopN: 2,
+    maxContextChars: 8000,
+    maxContextTokens: 3000,
+  },
+};
 const POST_LLM_PROVIDERS = [
   { value: 'ollama', label: 'Ollama 本地' },
   { value: 'deepseek', label: 'DeepSeek' },
@@ -71,19 +106,41 @@ export default function QA() {
 
   // ── 检索后优化 ──
   const [postprocessEnabled, setPostprocessEnabled] = useState(true);
-  const [postStrategies, setPostStrategies] = useState(DEFAULT_POST_STRATEGIES);
+  const [postPreset, setPostPreset] = useState('speed');
+  const [postStrategies, setPostStrategies] = useState(['deduplicate', 'rerank', 'context_pack']);
   const [showPostOpt, setShowPostOpt] = useState(false);
-  const [postprocessFetchK, setPostprocessFetchK] = useState(20);
+  const [postprocessFetchK, setPostprocessFetchK] = useState(12);
   const [rerankTopK, setRerankTopK] = useState(5);
-  const [rerankMethod, setRerankMethod] = useState('llm');
+  const [rerankMethod, setRerankMethod] = useState('cross_encoder');
   const [rerankModel, setRerankModel] = useState('BAAI/bge-reranker-base');
-  const [compressMethod, setCompressMethod] = useState('llm');
+  const [compressMethod, setCompressMethod] = useState('extractive');
   const [maxContextChars, setMaxContextChars] = useState(8000);
   const [maxContextTokens, setMaxContextTokens] = useState(3000);
   const [mmrLambda, setMmrLambda] = useState(0.7);
   const [postLlmProvider, setPostLlmProvider] = useState('ollama');
   const [postLlmModel, setPostLlmModel] = useState('qwen2.5:3b');
   const [postLlmApiKey, setPostLlmApiKey] = useState('');
+  const [llmCompressTopN, setLlmCompressTopN] = useState(2);
+  const [postprocessTrace, setPostprocessTrace] = useState([]);
+
+  const applyPostPreset = (presetKey) => {
+    const preset = POST_PRESETS[presetKey];
+    if (!preset) return;
+    setPostPreset(presetKey);
+    setPostprocessEnabled(true);
+    setPostStrategies(preset.strategies);
+    setRerankMethod(preset.rerankMethod);
+    setCompressMethod(preset.compressMethod);
+    setPostprocessFetchK(preset.fetchK);
+    setRerankTopK(preset.rerankTopK);
+    setLlmCompressTopN(preset.llmCompressTopN);
+    setMaxContextChars(preset.maxContextChars);
+    setMaxContextTokens(preset.maxContextTokens);
+    if (preset.rerankMethod === 'llm' || preset.compressMethod === 'llm') {
+      setPostLlmProvider('ollama');
+      setPostLlmModel('qwen2.5:3b');
+    }
+  };
 
   useEffect(() => {
     setModel(MODELS[provider][0].value);
@@ -150,6 +207,7 @@ export default function QA() {
     setError('');
     setSearchResults([]);
     setResponse('');
+    setPostprocessTrace([]);
     setActiveTab('response');
 
     try {
@@ -183,6 +241,11 @@ export default function QA() {
           postprocess_llm_provider: postLlmProvider,
           postprocess_llm_model: postLlmModel,
           postprocess_api_key: postLlmProvider === 'ollama' ? null : postLlmApiKey || null,
+          llm_compress_top_n: llmCompressTopN,
+          candidate_threshold: postprocessEnabled ? Math.max(0, threshold - 0.2) : null,
+          final_threshold: postprocessEnabled ? threshold : null,
+          allow_drop_irrelevant: false,
+          postprocess_trace_enabled: true,
         }),
       });
 
@@ -192,6 +255,7 @@ export default function QA() {
       }
 
       const data = await res.json();
+      setPostprocessTrace(data.postprocess_trace || []);
       setSearchResults(data.search_results || []);
       setResponse(data.response || '');
       if ((data.search_results || []).length === 0) {
@@ -460,6 +524,18 @@ export default function QA() {
                   />
                   <span className="text-sm text-gray-600">启用检索后优化</span>
                 </label>
+                <div>
+                  <label className="text-xs text-gray-500">优化预设</label>
+                  <select
+                    value={postPreset}
+                    onChange={(e) => applyPostPreset(e.target.value)}
+                    className="mt-1 w-full border rounded px-2 py-1 text-xs bg-white"
+                  >
+                    {Object.entries(POST_PRESETS).map(([key, preset]) => (
+                      <option key={key} value={key}>{preset.label}</option>
+                    ))}
+                  </select>
+                </div>
                 {[
                   ['deduplicate', '去重'],
                   ['rerank', '重排'],
@@ -570,6 +646,19 @@ export default function QA() {
                         className="col-span-2 w-full border rounded px-2 py-1 text-xs"
                       />
                     )}
+                    {compressMethod === 'llm' && (
+                      <label className="col-span-2 block text-xs text-gray-500">
+                        LLM 压缩前 N 条
+                        <input
+                          type="number"
+                          min={0}
+                          max={20}
+                          value={llmCompressTopN}
+                          onChange={(e) => setLlmCompressTopN(parseInt(e.target.value) || 0)}
+                          className="mt-1 w-full border rounded px-2 py-1 text-xs"
+                        />
+                      </label>
+                    )}
                   </div>
                 )}
                 <div>
@@ -673,6 +762,18 @@ export default function QA() {
                 </span>
               )}
             </button>
+            {postprocessTrace.length > 0 && (
+              <button
+                onClick={() => setActiveTab('trace')}
+                className={`px-4 py-2 text-sm rounded-t font-medium transition-colors ${
+                  activeTab === 'trace'
+                    ? 'bg-white text-blue-600 shadow'
+                    : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
+                }`}
+              >
+                优化 Trace
+              </button>
+            )}
           </div>
 
           <div className="flex-1 bg-white rounded-lg shadow p-5 overflow-y-auto min-h-0">
@@ -760,6 +861,10 @@ export default function QA() {
                   </div>
                 )}
               </>
+            )}
+
+            {!loading && activeTab === 'trace' && (
+              <PostprocessTrace trace={postprocessTrace} />
             )}
           </div>
         </div>

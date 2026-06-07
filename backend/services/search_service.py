@@ -6,6 +6,7 @@ from utils.config import VectorDBProvider, MILVUS_CONFIG
 import os
 import json
 import asyncio
+import re
 import chromadb
 
 chromadb_path = "./03-vector-store/chromadb"
@@ -88,7 +89,13 @@ class SearchService:
         # finally:
         #     connections.disconnect("default")
 
-    def save_search_results(self, query: str, collection_id: str, results: List[Dict[str, Any]]) -> str:
+    def save_search_results(
+        self,
+        query: str,
+        collection_id: str,
+        results: List[Dict[str, Any]],
+        postprocess_trace: List[Dict[str, Any]] | None = None,
+    ) -> str:
         """
         保存搜索结果到JSON文件
 
@@ -114,8 +121,10 @@ class SearchService:
                 "query": query,
                 "collection_id": collection_id,
                 "timestamp": datetime.now().isoformat(),
-                "results": results
+                "results": results,
             }
+            if postprocess_trace is not None:
+                search_data["postprocess_trace"] = postprocess_trace
 
             logger.info(f"Saving search results to: {filepath}")
 
@@ -215,6 +224,7 @@ class SearchService:
                 if hit_score >= threshold:
                     meta = results['metadatas'][0][hit]
                     original_text = results.get('documents')[0][hit]
+                    stored_word_count = int(meta.get('word_count') or 0)
                     
                     # === 核心逻辑：如果是父子分块，实施 "Small-to-Big" 扩展 ===
                     parent_id = meta.get('parent_id')
@@ -230,6 +240,15 @@ class SearchService:
                         display_text = f"【来源扩展段落】\n{parent_content}"
                     else:
                         display_text = original_text
+
+                    effective_word_count = max(stored_word_count, self._count_words(display_text or ""))
+                    if effective_word_count < word_count_threshold:
+                        logger.info(
+                            "Skipping hit below word_count_threshold: %s < %s",
+                            effective_word_count,
+                            word_count_threshold,
+                        )
+                        continue
                     # ===========================================================
                     processed_results.append({
                         "text": display_text,
@@ -240,11 +259,17 @@ class SearchService:
                             "chunk": results.get('ids')[0][hit],
                             "total_chunks": results['metadatas'][0][hit].get('total_chunks'),
                             "page_range": results['metadatas'][0][hit].get('page_range'),
+                            "word_count": effective_word_count,
                             "embedding_provider": results['metadatas'][0][hit].get('embedding_provider'),
                             "embedding_model": results['metadatas'][0][hit].get('embedding_model'),
                             "embedding_timestamp": results['metadatas'][0][hit].get('embedding_timestamp'),
                             "parent_id": parent_id,
                             "heading_hierarchy": results['metadatas'][0][hit].get('heading_hierarchy'),
+                            "retrieval_score": float(hit_score),
+                            "original_score": float(hit_score),
+                            "final_score": float(hit_score),
+                            "candidate_rank": hit + 1,
+                            "expanded_from_child": bool(parent_id and parent_content),
                         }
                     })
 
@@ -466,7 +491,8 @@ class SearchService:
         """
         Reciprocal Rank Fusion。
 
-        对每个唯一文档（以 text 内容去重），累加其在不同查询中的 RRF 分数：
+        对每个唯一片段累加其在不同查询中的 RRF 分数。唯一性优先使用
+        文档身份 + parent/chunk/page，缺少结构信息时回退到文本指纹：
             score = sum(1 / (k + rank_i))
 
         Args:
@@ -476,22 +502,97 @@ class SearchService:
         Returns:
             融合后的结果列表，score 为 RRF 分数
         """
-        # 用 text 内容的哈希作为 key 去重
-        import hashlib
-        doc_map: Dict[str, dict] = {}  # text_hash → merged item
+        doc_map: Dict[str, dict] = {}
 
         for rank, item in items:
             text = item.get("text", "")
-            key = hashlib.md5(text.encode("utf-8", errors="replace")).hexdigest()
+            metadata = item.get("metadata", {}) or {}
+            key = SearchService._result_identity_key(item)
 
             if key not in doc_map:
                 doc_map[key] = {
                     "text": text,
                     "score": 0.0,
-                    "metadata": item.get("metadata", {}),
+                    "metadata": {
+                        **metadata,
+                        "retrieval_score": float(metadata.get("retrieval_score", item.get("score", 0.0))),
+                        "original_score": float(metadata.get("original_score", item.get("score", 0.0))),
+                    },
                 }
 
             rrf_score = 1.0 / (rrf_k + rank + 1)  # rank 从 0 开始，+1 确保分母 ≥ 1
             doc_map[key]["score"] += rrf_score
+            doc_map[key]["metadata"]["fusion_score"] = doc_map[key]["score"]
+            doc_map[key]["metadata"]["final_score"] = doc_map[key]["score"]
+            doc_map[key]["metadata"]["postprocess_reason"] = doc_map[key]["metadata"].get("postprocess_reason")
 
-        return list(doc_map.values())
+        merged = list(doc_map.values())
+        max_fusion = max((float(item.get("score", 0.0)) for item in merged), default=0.0)
+        for item in merged:
+            raw_fusion = float(item.get("score", 0.0))
+            normalized = float(item.get("score", 0.0)) / max_fusion if max_fusion > 0 else 0.0
+            item["metadata"]["fusion_score"] = raw_fusion
+            item["metadata"]["fusion_score_normalized"] = normalized
+            # Use normalized score for the public score so UI and thresholding share the same scale.
+            item["score"] = normalized
+            item["metadata"]["final_score"] = normalized
+        return merged
+
+    @staticmethod
+    def _result_identity_key(item: Dict[str, Any]) -> str:
+        import hashlib
+
+        metadata = item.get("metadata", {}) or {}
+        text = item.get("text", "")
+        normalized_text = re.sub(r"\s+", "", text).lower()
+        text_fingerprint = hashlib.md5(normalized_text.encode("utf-8", errors="replace")).hexdigest()
+        doc_key = SearchService._metadata_doc_key(metadata)
+        parent_id = SearchService._metadata_value(metadata, "parent_id")
+        chunk_key = SearchService._metadata_locator_key(metadata)
+
+        if doc_key and parent_id:
+            return f"doc:{doc_key}|parent:{parent_id}"
+        if doc_key and chunk_key:
+            return f"doc:{doc_key}|loc:{chunk_key}"
+        if doc_key:
+            return f"doc:{doc_key}|text:{text_fingerprint}"
+        if parent_id:
+            return f"parent:{parent_id}|text:{text_fingerprint}"
+        if chunk_key:
+            return f"loc:{chunk_key}|text:{text_fingerprint}"
+        return f"text:{text_fingerprint}"
+
+    @staticmethod
+    def _metadata_doc_key(metadata: Dict[str, Any]) -> str:
+        parts = [
+            SearchService._metadata_value(metadata, "source"),
+            SearchService._metadata_value(metadata, "document_name"),
+            SearchService._metadata_value(metadata, "file_name"),
+            SearchService._metadata_value(metadata, "filename"),
+        ]
+        return "|".join(part for part in parts if part)
+
+    @staticmethod
+    def _metadata_locator_key(metadata: Dict[str, Any]) -> str:
+        parts = [
+            SearchService._metadata_value(metadata, "page"),
+            SearchService._metadata_value(metadata, "page_range"),
+            SearchService._metadata_value(metadata, "chunk"),
+            SearchService._metadata_value(metadata, "chunk_id"),
+        ]
+        return "|".join(part for part in parts if part)
+
+    @staticmethod
+    def _metadata_value(metadata: Dict[str, Any], key: str) -> str:
+        value = metadata.get(key)
+        if value is None:
+            return ""
+        return str(value).strip()
+
+    @staticmethod
+    def _count_words(text: str) -> int:
+        if not text:
+            return 0
+        ascii_words = re.findall(r"[A-Za-z0-9_]+", text)
+        chinese_chars = re.findall(r"[\u4e00-\u9fff]", text)
+        return len(ascii_words) + len(chinese_chars)

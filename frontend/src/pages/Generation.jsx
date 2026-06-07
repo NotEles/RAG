@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import RandomImage from '../components/RandomImage';
+import PostprocessTrace from '../components/PostprocessTrace';
 import { apiBaseUrl } from '../config/config';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -18,6 +19,39 @@ const POST_LLM_MODELS = {
   deepseek: ['deepseek-v3', 'deepseek-r1'],
   openai: ['gpt-4o-mini', 'gpt-4o'],
   aliyun: ['qwen-turbo', 'qwen-plus'],
+};
+
+const POST_PRESETS = {
+  local_quality: {
+    label: '质量优先',
+    strategies: ['deduplicate', 'rerank', 'compress', 'context_pack'],
+    rerankMethod: 'llm',
+    compressMethod: 'llm',
+    rerankTopK: 5,
+    llmCompressTopN: 2,
+    maxContextChars: 8000,
+    maxContextTokens: 3000,
+  },
+  speed: {
+    label: '速度优先',
+    strategies: ['deduplicate', 'rerank', 'context_pack'],
+    rerankMethod: 'cross_encoder',
+    compressMethod: 'extractive',
+    rerankTopK: 5,
+    llmCompressTopN: 2,
+    maxContextChars: 8000,
+    maxContextTokens: 3000,
+  },
+  offline: {
+    label: '本地离线',
+    strategies: ['deduplicate', 'rerank', 'compress', 'context_pack'],
+    rerankMethod: 'cross_encoder',
+    compressMethod: 'extractive',
+    rerankTopK: 5,
+    llmCompressTopN: 2,
+    maxContextChars: 8000,
+    maxContextTokens: 3000,
+  },
 };
 
 const Generation = () => {
@@ -38,6 +72,7 @@ const Generation = () => {
   const [taskType, setTaskType] = useState('auto');
   const [taskTypes, setTaskTypes] = useState([]);
   const [postprocessEnabled, setPostprocessEnabled] = useState(false);
+  const [postPreset, setPostPreset] = useState('local_quality');
   const [postStrategies, setPostStrategies] = useState(['deduplicate', 'rerank', 'compress', 'context_pack']);
   const [showPostOpt, setShowPostOpt] = useState(false);
   const [rerankMethod, setRerankMethod] = useState('llm');
@@ -50,7 +85,26 @@ const Generation = () => {
   const [postLlmProvider, setPostLlmProvider] = useState('ollama');
   const [postLlmModel, setPostLlmModel] = useState('qwen2.5:3b');
   const [postLlmApiKey, setPostLlmApiKey] = useState('');
+  const [llmCompressTopN, setLlmCompressTopN] = useState(2);
   const [forcePostprocess, setForcePostprocess] = useState(false);
+  const [postprocessTrace, setPostprocessTrace] = useState([]);
+  const applyPostPreset = (presetKey) => {
+    const preset = POST_PRESETS[presetKey];
+    if (!preset) return;
+    setPostPreset(presetKey);
+    setPostprocessEnabled(true);
+    setPostStrategies(preset.strategies);
+    setRerankMethod(preset.rerankMethod);
+    setCompressMethod(preset.compressMethod);
+    setRerankTopK(preset.rerankTopK);
+    setLlmCompressTopN(preset.llmCompressTopN);
+    setMaxContextChars(preset.maxContextChars);
+    setMaxContextTokens(preset.maxContextTokens);
+    if (preset.rerankMethod === 'llm' || preset.compressMethod === 'llm') {
+      setPostLlmProvider('ollama');
+      setPostLlmModel('qwen2.5:3b');
+    }
+  };
   const hasPostProcessedResults = searchResults.some(result => result.metadata?.postprocess_reason);
   const allPostProcessedResults = searchResults.length > 0 && searchResults.every(result => result.metadata?.postprocess_reason);
   const shouldPostprocess = postprocessEnabled && (forcePostprocess || !allPostProcessedResults);
@@ -88,16 +142,24 @@ const Generation = () => {
       if (!selectedFile) {
         setQuery('');
         setSearchResults([]);
+        setPostprocessTrace([]);
         return;
       }
 
+      setPostprocessTrace([]);
       try {
         const response = await fetch(`${apiBaseUrl}/search-results/${selectedFile}`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const data = await response.json();
-        setQuery(data.query);
-        setSearchResults(data.results);
+        setQuery(data.query || '');
+        setSearchResults(Array.isArray(data.results) ? data.results : []);
+        setPostprocessTrace(data.postprocess_trace || []);
       } catch (error) {
         console.error('Error loading search results:', error);
+        setSearchResults([]);
+        setPostprocessTrace([]);
         setStatus('加载搜索结果失败');
       }
     };
@@ -108,9 +170,15 @@ const Generation = () => {
   // 如果从搜索页面跳转过来，获取搜索结果
   useEffect(() => {
     if (location.state) {
-      const { query: searchQuery, results } = location.state;
+      const {
+        query: searchQuery,
+        results,
+        postprocess_trace: trace,
+        postprocessTrace: postprocessTraceFromState,
+      } = location.state;
       if (searchQuery) setQuery(searchQuery);
       if (results) setSearchResults(results);
+      setPostprocessTrace(trace || postprocessTraceFromState || []);
     }
   }, [location]);
 
@@ -127,6 +195,7 @@ const Generation = () => {
 
     setIsGenerating(true);
     setStatus('');
+    setPostprocessTrace([]);
     try {
       const response = await fetch(`${apiBaseUrl}/generate`, {
         method: 'POST',
@@ -154,6 +223,10 @@ const Generation = () => {
           postprocess_llm_provider: postLlmProvider,
           postprocess_llm_model: postLlmModel,
           postprocess_api_key: postLlmProvider === 'ollama' ? null : postLlmApiKey || null,
+          llm_compress_top_n: llmCompressTopN,
+          final_threshold: null,
+          allow_drop_irrelevant: false,
+          postprocess_trace_enabled: true,
         }),
       });
 
@@ -163,6 +236,7 @@ const Generation = () => {
 
       const data = await response.json();
       setResponse(data.response);
+      setPostprocessTrace(data.postprocess_trace || []);
       if (data.search_results) {
         setSearchResults(data.search_results);
       }
@@ -323,6 +397,18 @@ const Generation = () => {
                           />
                           启用检索后优化
                         </label>
+                        <label className="block text-xs text-gray-500">
+                          优化预设
+                          <select
+                            value={postPreset}
+                            onChange={(e) => applyPostPreset(e.target.value)}
+                            className="mt-1 w-full border rounded px-1.5 py-1 text-xs bg-white"
+                          >
+                            {Object.entries(POST_PRESETS).map(([key, preset]) => (
+                              <option key={key} value={key}>{preset.label}</option>
+                            ))}
+                          </select>
+                        </label>
                         {hasPostProcessedResults && (
                           <label className="flex items-center gap-2 text-xs cursor-pointer">
                             <input
@@ -431,6 +517,19 @@ const Generation = () => {
                                 className="col-span-2 w-full border rounded px-1.5 py-1 text-xs"
                               />
                             )}
+                            {compressMethod === 'llm' && (
+                              <label className="col-span-2 block text-xs text-gray-500">
+                                LLM 压缩前 N 条
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="20"
+                                  value={llmCompressTopN}
+                                  onChange={(e) => setLlmCompressTopN(parseInt(e.target.value) || 0)}
+                                  className="mt-1 w-full border rounded px-1.5 py-1 text-xs"
+                                />
+                              </label>
+                            )}
                           </div>
                         )}
                         <label className="block text-xs text-gray-500">
@@ -496,6 +595,7 @@ const Generation = () => {
 
         {/* Right Panel - Context and Response */}
         <div className="col-span-8">
+          <PostprocessTrace trace={postprocessTrace} />
           {selectedFile ? (
             <>
               {/* Search Results Context */}

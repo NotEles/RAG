@@ -59,6 +59,9 @@ post_retrieval_service = PostRetrievalService()
 
 
 def _build_post_retrieval_config(data) -> PostRetrievalConfig:
+    final_threshold = getattr(data, "final_threshold", None)
+    if final_threshold is None and hasattr(data, "threshold"):
+        final_threshold = getattr(data, "threshold", None)
     return PostRetrievalConfig(
         enabled=getattr(data, "postprocess_enabled", False),
         strategies=getattr(data, "postprocess_strategies", []) or [],
@@ -72,6 +75,11 @@ def _build_post_retrieval_config(data) -> PostRetrievalConfig:
         llm_provider=getattr(data, "postprocess_llm_provider", "ollama"),
         llm_model=getattr(data, "postprocess_llm_model", "qwen2.5:3b"),
         api_key=getattr(data, "postprocess_api_key", None),
+        final_top_k=getattr(data, "top_k", None),
+        final_threshold=final_threshold,
+        allow_drop_irrelevant=getattr(data, "allow_drop_irrelevant", False),
+        trace_enabled=getattr(data, "postprocess_trace_enabled", True),
+        llm_compress_top_n=getattr(data, "llm_compress_top_n", 2),
     )
 
 
@@ -82,6 +90,18 @@ def _candidate_top_k(data) -> int:
     if not ({"rerank", "diversify"} & strategies):
         return data.top_k
     return max(data.top_k, getattr(data, "rerank_top_k", data.top_k), getattr(data, "postprocess_fetch_k", data.top_k))
+
+
+def _candidate_threshold(data) -> float:
+    if not getattr(data, "postprocess_enabled", False):
+        return data.threshold
+    explicit = getattr(data, "candidate_threshold", None)
+    if explicit is not None:
+        return explicit
+    final_threshold = getattr(data, "final_threshold", None)
+    if final_threshold is None:
+        final_threshold = data.threshold
+    return max(0.0, min(float(data.threshold), float(final_threshold) - 0.2))
 
 @app.post("/process")
 async def process_file(
@@ -313,12 +333,13 @@ async def search(data: SearchRequest):
         # ── 检索 ──
         search_service = SearchService()
         retrieval_top_k = _candidate_top_k(data)
+        retrieval_threshold = _candidate_threshold(data)
         if len(queries) == 1:
             results = await search_service.search(
                 query=queries[0],
                 collection_id=data.collection_id,
                 top_k=retrieval_top_k,
-                threshold=data.threshold,
+                threshold=retrieval_threshold,
                 word_count_threshold=data.word_count_threshold,
                 save_results=False,
             )
@@ -327,20 +348,26 @@ async def search(data: SearchRequest):
                 queries=queries,
                 collection_id=data.collection_id,
                 top_k=retrieval_top_k,
-                threshold=data.threshold,
+                threshold=retrieval_threshold,
                 word_count_threshold=data.word_count_threshold,
             )
 
         search_results = results.get("results", [])
         post_config = _build_post_retrieval_config(data)
+        postprocess_trace = []
         if post_config.enabled:
-            search_results = post_retrieval_service.process(data.query, search_results, post_config)
+            search_results, postprocess_trace = post_retrieval_service.process(data.query, search_results, post_config)
         if not post_config.enabled and len(search_results) > data.top_k:
             search_results = search_results[:data.top_k]
 
-        response = {"results": search_results}
+        response = {"results": search_results, "postprocess_trace": postprocess_trace}
         if data.save_results:
-            filepath = search_service.save_search_results(data.query, data.collection_id, search_results)
+            filepath = search_service.save_search_results(
+                data.query,
+                data.collection_id,
+                search_results,
+                postprocess_trace=postprocess_trace,
+            )
             response["saved_filepath"] = filepath
         return response
     except Exception as e:
@@ -891,7 +918,12 @@ async def evaluate_search(
 async def save_search_results(data: SaveSearchRequest):
     try:
         search_service = SearchService()
-        filepath = search_service.save_search_results(data.query, data.collection_id, data.results)
+        filepath = search_service.save_search_results(
+            data.query,
+            data.collection_id,
+            data.results,
+            postprocess_trace=data.postprocess_trace,
+        )
         return SaveSearchResponse(saved_filepath=filepath)
     except Exception as e:
         logger.error(f"Error saving search results: {str(e)}")
@@ -963,8 +995,9 @@ async def generate_response(data: GenerateRequest):
     try:
         search_results = data.search_results
         post_config = _build_post_retrieval_config(data)
+        postprocess_trace = []
         if post_config.enabled:
-            search_results = post_retrieval_service.process(data.query, search_results, post_config)
+            search_results, postprocess_trace = post_retrieval_service.process(data.query, search_results, post_config)
 
         result = generation_service.generate(
             provider=data.provider,
@@ -977,6 +1010,7 @@ async def generate_response(data: GenerateRequest):
             task_type=data.task_type,
         )
         result["search_results"] = search_results
+        result["postprocess_trace"] = postprocess_trace
         return GenerateResponse(**result)
     except Exception as e:
         logger.error(f"Error generating response: {str(e)}")
@@ -1249,12 +1283,13 @@ async def qa_endpoint(data: QARequest):
         # ── 检索 ──
         search_service = SearchService()
         retrieval_top_k = _candidate_top_k(data)
+        retrieval_threshold = _candidate_threshold(data)
         if len(queries) == 1:
             search_response = await search_service.search(
                 query=queries[0],
                 collection_id=data.collection,
                 top_k=retrieval_top_k,
-                threshold=data.threshold,
+                threshold=retrieval_threshold,
                 word_count_threshold=data.word_count_threshold,
             )
         else:
@@ -1262,14 +1297,15 @@ async def qa_endpoint(data: QARequest):
                 queries=queries,
                 collection_id=data.collection,
                 top_k=retrieval_top_k,
-                threshold=data.threshold,
+                threshold=retrieval_threshold,
                 word_count_threshold=data.word_count_threshold,
             )
         search_results = search_response.get("results", [])
 
         post_config = _build_post_retrieval_config(data)
+        postprocess_trace = []
         if post_config.enabled:
-            search_results = post_retrieval_service.process(data.query, search_results, post_config)
+            search_results, postprocess_trace = post_retrieval_service.process(data.query, search_results, post_config)
         elif len(search_results) > data.top_k:
             search_results = search_results[:data.top_k]
 
@@ -1288,6 +1324,7 @@ async def qa_endpoint(data: QARequest):
             query=data.query,
             search_results=search_results,
             response=result["response"],
+            postprocess_trace=postprocess_trace,
         )
     except Exception as e:
         logger.error(f"Error in QA endpoint: {str(e)}")

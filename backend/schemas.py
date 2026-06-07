@@ -144,6 +144,11 @@ class SearchRequest(BaseModel):
     postprocess_llm_provider: PostprocessLlmProvider = Field("ollama", description="LLM 重排/压缩提供商：ollama | deepseek | openai | aliyun | huggingface")
     postprocess_llm_model: str = Field("qwen2.5:3b", description="LLM 重排/压缩模型")
     postprocess_api_key: Optional[str] = Field(None, description="LLM 重排/压缩 API Key，未传则读取环境变量")
+    llm_compress_top_n: int = Field(2, ge=0, le=20, description="LLM 压缩最多处理的前 N 条结果，0 表示不执行 LLM 压缩")
+    candidate_threshold: Optional[float] = Field(None, ge=0.0, le=1.0, description="后处理候选召回阈值；为空时自动比最终阈值更宽松")
+    final_threshold: Optional[float] = Field(None, ge=0.0, le=1.0, description="后处理后的最终相关性阈值；为空时使用 threshold")
+    allow_drop_irrelevant: bool = Field(False, description="LLM 压缩判断无关时是否允许直接删除片段，默认保守不删除")
+    postprocess_trace_enabled: bool = Field(True, description="是否在响应顶层返回检索后优化 trace")
 
 class SearchResultMeta(BaseModel):
     source: Optional[str] = None
@@ -157,19 +162,31 @@ class SearchResultMeta(BaseModel):
     # --- 新增 ---
     parent_id: Optional[str] = None
     heading_hierarchy: Optional[str] = None
+    word_count: Optional[int] = None
+    retrieval_score: Optional[float] = None
+    fusion_score: Optional[float] = None
+    fusion_score_normalized: Optional[float] = None
     original_score: Optional[float] = None
     rerank_score: Optional[float] = None
+    rerank_reason: Optional[str] = None
     rerank_fallback_from: Optional[str] = None
     final_score: Optional[float] = None
     compressed: Optional[bool] = None
     original_length: Optional[int] = None
     compressed_length: Optional[int] = None
     llm_compress_skipped_length: Optional[int] = None
+    llm_compress_skipped_rank: Optional[int] = None
     llm_compress_rejected_length: Optional[int] = None
     llm_compress_rejected_reason: Optional[str] = None
     postprocess_reason: Optional[str] = None
     mmr_score: Optional[float] = None
     packed_tokens: Optional[int] = None
+    context_index: Optional[int] = None
+    context_truncated: Optional[bool] = None
+    candidate_rank: Optional[int] = None
+    expanded_from_child: Optional[bool] = None
+    kept_sentence_indexes: Optional[List[int]] = None
+    kept_facts: Optional[List[str]] = None
 
 class SearchResultItem(BaseModel):
     text: str
@@ -178,6 +195,7 @@ class SearchResultItem(BaseModel):
 
 class SearchResponse(BaseModel):
     results: List[SearchResultItem]
+    postprocess_trace: Optional[List[Dict[str, Any]]] = None
 
 
 # ─────────────────────────────────────────────
@@ -188,6 +206,7 @@ class SaveSearchRequest(BaseModel):
     query: str
     collection_id: str
     results: List[Dict[str, Any]]
+    postprocess_trace: Optional[List[Dict[str, Any]]] = None
 
 class SaveSearchResponse(BaseModel):
     saved_filepath: str
@@ -222,12 +241,17 @@ class GenerateRequest(BaseModel):
     postprocess_llm_provider: PostprocessLlmProvider = Field("ollama", description="LLM 重排/压缩提供商：ollama | deepseek | openai | aliyun | huggingface")
     postprocess_llm_model: str = Field("qwen2.5:3b", description="LLM 重排/压缩模型")
     postprocess_api_key: Optional[str] = Field(None, description="LLM 重排/压缩 API Key，未传则读取对应提供商环境变量")
+    llm_compress_top_n: int = Field(2, ge=0, le=20, description="LLM 压缩最多处理的前 N 条结果，0 表示不执行 LLM 压缩")
+    final_threshold: Optional[float] = Field(None, ge=0.0, le=1.0, description="后处理后的最终相关性阈值；为空时不过滤")
+    allow_drop_irrelevant: bool = Field(False, description="LLM 压缩判断无关时是否允许直接删除片段，默认保守不删除")
+    postprocess_trace_enabled: bool = Field(True, description="是否在响应顶层返回检索后优化 trace")
 
 class GenerateResponse(BaseModel):
     response: str
     saved_filepath: str
     detected_task: Optional[str] = None
     search_results: Optional[List[SearchResultItem]] = None
+    postprocess_trace: Optional[List[Dict[str, Any]]] = None
 
 
 # ─────────────────────────────────────────────
@@ -287,11 +311,17 @@ class QARequest(BaseModel):
     postprocess_llm_provider: PostprocessLlmProvider = Field("ollama", description="LLM 重排/压缩提供商：ollama | deepseek | openai | aliyun | huggingface")
     postprocess_llm_model: str = Field("qwen2.5:3b", description="LLM 重排/压缩模型")
     postprocess_api_key: Optional[str] = Field(None, description="LLM 重排/压缩 API Key，未传则读取对应提供商环境变量")
+    llm_compress_top_n: int = Field(2, ge=0, le=20, description="LLM 压缩最多处理的前 N 条结果，0 表示不执行 LLM 压缩")
+    candidate_threshold: Optional[float] = Field(None, ge=0.0, le=1.0, description="后处理候选召回阈值；为空时自动比最终阈值更宽松")
+    final_threshold: Optional[float] = Field(None, ge=0.0, le=1.0, description="后处理后的最终相关性阈值；为空时使用 threshold")
+    allow_drop_irrelevant: bool = Field(False, description="LLM 压缩判断无关时是否允许直接删除片段，默认保守不删除")
+    postprocess_trace_enabled: bool = Field(True, description="是否在响应顶层返回检索后优化 trace")
 
 class QAResponse(BaseModel):
     query: str
     search_results: List[SearchResultItem]
     response: str
+    postprocess_trace: Optional[List[Dict[str, Any]]] = None
 
 
 # ─────────────────────────────────────────────

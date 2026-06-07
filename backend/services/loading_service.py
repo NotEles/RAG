@@ -1,7 +1,4 @@
-from pypdf import PdfReader
-from unstructured.partition.pdf import partition_pdf
-import pdfplumber
-import fitz  # PyMuPDF
+from pathlib import Path
 import logging
 import os
 from datetime import datetime
@@ -36,6 +33,42 @@ class LoadingService:
     def __init__(self):
         self.total_pages = 0
         self.current_page_map = []
+
+    SUPPORTED_EXTENSIONS = {
+        ".pdf", ".json", ".jsonl", ".md", ".markdown", ".txt", ".csv",
+        ".docx", ".png", ".jpg", ".jpeg", ".bmp", ".tiff", ".tif", ".webp"
+    }
+
+    def load_document(self, file_path: str, method: str = "auto", strategy: str = None, chunking_strategy: str = None, chunking_options: dict = None) -> str:
+        """Load text from supported document formats and keep a page-like map."""
+        suffix = Path(file_path).suffix.lower()
+        if suffix not in self.SUPPORTED_EXTENSIONS:
+            supported = ", ".join(sorted(self.SUPPORTED_EXTENSIONS))
+            raise ValueError(f"Unsupported file type: {suffix or 'unknown'}. Supported types: {supported}")
+
+        if suffix == ".pdf":
+            pdf_method = method if method and method != "auto" else "pymupdf"
+            return self.load_pdf(
+                file_path,
+                pdf_method,
+                strategy=strategy,
+                chunking_strategy=chunking_strategy,
+                chunking_options=chunking_options,
+            )
+        if suffix in {".json", ".jsonl"}:
+            return self._load_json(file_path)
+        if suffix in {".md", ".markdown"}:
+            return self._load_markdown(file_path)
+        if suffix == ".txt":
+            return self._load_text_file(file_path, source_type="text")
+        if suffix == ".csv":
+            return self._load_csv(file_path)
+        if suffix == ".docx":
+            return self._load_docx(file_path)
+        if suffix in {".png", ".jpg", ".jpeg", ".bmp", ".tiff", ".tif", ".webp"}:
+            return self._load_image(file_path)
+
+        raise ValueError(f"Unsupported file type: {suffix}")
     
     def load_pdf(self, file_path: str, method: str, strategy: str = None, chunking_strategy: str = None, chunking_options: dict = None) -> str:
         """
@@ -52,6 +85,7 @@ class LoadingService:
             str: 提取的文本内容
         """
         try:
+            chunking_options = chunking_options or {}
             if method == "pymupdf":
                 return self._load_with_pymupdf(file_path)
             elif method == "pypdf":
@@ -70,6 +104,216 @@ class LoadingService:
         except Exception as e:
             logger.error(f"Error loading PDF with {method}: {str(e)}")
             raise
+
+    def _set_page_map(self, blocks: list) -> str:
+        self.current_page_map = [block for block in blocks if str(block.get("text", "")).strip()]
+        self.total_pages = len(self.current_page_map)
+        return "\n".join(block["text"] for block in self.current_page_map)
+
+    def _load_text_file(self, file_path: str, source_type: str = "text") -> str:
+        with open(file_path, "r", encoding="utf-8-sig") as f:
+            text = f.read().strip()
+        blocks = [{"text": text, "page": 1, "metadata": {"source_type": source_type}}] if text else []
+        return self._set_page_map(blocks)
+
+    def _load_markdown(self, file_path: str) -> str:
+        text = self._read_text_with_fallback(file_path)
+        sections = []
+        current_title = "Markdown"
+        current_lines = []
+
+        for line in text.splitlines():
+            if line.lstrip().startswith("#") and current_lines:
+                sections.append({
+                    "text": "\n".join(current_lines).strip(),
+                    "page": len(sections) + 1,
+                    "metadata": {"source_type": "markdown", "title": current_title}
+                })
+                current_title = line.lstrip("#").strip() or "Untitled"
+                current_lines = [line]
+            else:
+                if line.lstrip().startswith("#"):
+                    current_title = line.lstrip("#").strip() or "Untitled"
+                current_lines.append(line)
+
+        if current_lines:
+            sections.append({
+                "text": "\n".join(current_lines).strip(),
+                "page": len(sections) + 1,
+                "metadata": {"source_type": "markdown", "title": current_title}
+            })
+
+        return self._set_page_map(sections)
+
+    def _load_json(self, file_path: str) -> str:
+        suffix = Path(file_path).suffix.lower()
+        if suffix == ".jsonl":
+            items = []
+            with open(file_path, "r", encoding="utf-8-sig") as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        items.append(json.loads(line))
+            data = items
+        else:
+            with open(file_path, "r", encoding="utf-8-sig") as f:
+                data = json.load(f)
+
+        items = self._extract_json_items(data)
+        blocks = []
+        for idx, item in enumerate(items, 1):
+            text = self._json_item_to_text(item)
+            if text.strip():
+                blocks.append({
+                    "text": text,
+                    "page": idx,
+                    "metadata": {"source_type": "json", "json_index": idx}
+                })
+        return self._set_page_map(blocks)
+
+    def _load_csv(self, file_path: str) -> str:
+        import pandas as pd
+
+        df = pd.read_csv(file_path)
+        blocks = []
+        for idx, row in df.iterrows():
+            values = []
+            for key, value in row.items():
+                if pd.notna(value):
+                    values.append(f"{key}: {value}")
+            text = "\n".join(values).strip()
+            if text:
+                blocks.append({
+                    "text": text,
+                    "page": idx + 1,
+                    "metadata": {"source_type": "csv", "row": idx + 1}
+                })
+        return self._set_page_map(blocks)
+
+    def _load_docx(self, file_path: str) -> str:
+        try:
+            from docx import Document
+        except ImportError as exc:
+            raise ImportError("DOCX parsing requires python-docx. Please install it with: pip install python-docx") from exc
+
+        document = Document(file_path)
+        blocks = []
+        current_lines = []
+        section_title = "Document"
+
+        for para in document.paragraphs:
+            text = para.text.strip()
+            if not text:
+                continue
+            style_name = getattr(para.style, "name", "")
+            if style_name.startswith("Heading") and current_lines:
+                blocks.append({
+                    "text": "\n".join(current_lines).strip(),
+                    "page": len(blocks) + 1,
+                    "metadata": {"source_type": "docx", "title": section_title}
+                })
+                section_title = text
+                current_lines = [text]
+            else:
+                if style_name.startswith("Heading"):
+                    section_title = text
+                current_lines.append(text)
+
+        for table_idx, table in enumerate(document.tables, 1):
+            rows = []
+            for row in table.rows:
+                rows.append(" | ".join(cell.text.strip() for cell in row.cells))
+            table_text = "\n".join(rows).strip()
+            if table_text:
+                current_lines.append(f"Table {table_idx}:\n{table_text}")
+
+        if current_lines:
+            blocks.append({
+                "text": "\n".join(current_lines).strip(),
+                "page": len(blocks) + 1,
+                "metadata": {"source_type": "docx", "title": section_title}
+            })
+        return self._set_page_map(blocks)
+
+    def _load_image(self, file_path: str) -> str:
+        try:
+            from PIL import Image
+            import pytesseract
+        except ImportError as exc:
+            raise ImportError("Image parsing requires pillow and pytesseract. Please install them with: pip install pillow pytesseract") from exc
+
+        try:
+            image = Image.open(file_path)
+            text = pytesseract.image_to_string(image, lang="chi_sim+eng").strip()
+        except Exception:
+            image = Image.open(file_path)
+            text = pytesseract.image_to_string(image).strip()
+
+        if not text:
+            raise ValueError("No text could be extracted from the image. Please check OCR/Tesseract installation or upload a clearer image.")
+
+        return self._set_page_map([{
+            "text": text,
+            "page": 1,
+            "metadata": {"source_type": "image", "ocr_engine": "tesseract"}
+        }])
+
+    def _read_text_with_fallback(self, file_path: str) -> str:
+        for encoding in ("utf-8-sig", "utf-8", "gb18030"):
+            try:
+                with open(file_path, "r", encoding=encoding) as f:
+                    return f.read()
+            except UnicodeDecodeError:
+                continue
+        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            return f.read()
+
+    def _extract_json_items(self, data) -> list:
+        if isinstance(data, list):
+            return data
+        if isinstance(data, dict):
+            if "chunks" in data and isinstance(data["chunks"], list):
+                return data["chunks"]
+            for value in data.values():
+                if isinstance(value, list) and value:
+                    return value
+            return [data]
+        return [data]
+
+    def _json_item_to_text(self, item) -> str:
+        if item is None:
+            return ""
+        if isinstance(item, str):
+            return item.strip()
+        if isinstance(item, (bool, int, float)):
+            return str(item)
+        if isinstance(item, list):
+            parts = [self._json_item_to_text(value) for value in item]
+            return "\n".join(part for part in parts if part)
+        if isinstance(item, dict):
+            if "content" in item and isinstance(item["content"], str):
+                return item["content"].strip()
+            if "question" in item and "answers" in item:
+                question = str(item.get("question", "")).strip()
+                answers = item.get("answers", [])
+                answer_texts = []
+                if isinstance(answers, list):
+                    for answer in answers:
+                        if isinstance(answer, dict):
+                            answer_texts.append(str(answer.get("answer", "")).strip())
+                        else:
+                            answer_texts.append(str(answer).strip())
+                answer_text = "\n".join(text for text in answer_texts if text)
+                return f"问题：{question}\n回答：{answer_text}".strip()
+            parts = []
+            for key, value in item.items():
+                if key in {"id", "chunk_id", "answer_quality"}:
+                    continue
+                text = self._json_item_to_text(value)
+                if text:
+                    parts.append(f"{key}: {text}" if not isinstance(value, (dict, list)) else text)
+            return "\n".join(parts)
+        return str(item).strip()
     
     def get_total_pages(self) -> int:
         """
@@ -102,6 +346,8 @@ class LoadingService:
         """
         text_blocks = []
         try:
+            import fitz  # PyMuPDF
+
             with fitz.open(file_path) as doc:
                 self.total_pages = len(doc)
                 for page_num, page in enumerate(doc, 1):
@@ -129,6 +375,8 @@ class LoadingService:
             str: 提取的文本内容
         """
         try:
+            from pypdf import PdfReader
+
             text_blocks = []
             with open(file_path, "rb") as file:
                 pdf = PdfReader(file)
@@ -161,6 +409,8 @@ class LoadingService:
             str: 提取的文本内容
         """
         try:
+            from unstructured.partition.pdf import partition_pdf
+
             strategy_params = {
                 "fast": {"strategy": "fast"},
                 "hi_res": {"strategy": "hi_res"},
@@ -251,6 +501,8 @@ class LoadingService:
         """
         text_blocks = []
         try:
+            import pdfplumber
+
             with pdfplumber.open(file_path) as pdf:
                 self.total_pages = len(pdf.pages)
                 for page_num, page in enumerate(pdf.pages, 1):
@@ -283,7 +535,7 @@ class LoadingService:
         """
         try:
             timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-            base_name = filename.replace('.pdf', '').split('_')[0]
+            base_name = Path(filename).stem.split('_')[0]
             
             # Adjust the document name to include strategy if unstructured
             if loading_method == "unstructured" and strategy:

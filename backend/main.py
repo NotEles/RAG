@@ -13,7 +13,6 @@ import logging
 from enum import Enum
 from utils.config import VectorDBProvider
 import pandas as pd
-from pathlib import Path
 from services.generation_service import GenerationService
 from services.prompt_service import PromptService
 from services.query_service import QueryService
@@ -72,7 +71,7 @@ async def process_file(
         # 准备元数据
         metadata = {
             "filename": file.filename,
-            "loading_method": loading_method if Path(file.filename).suffix.lower() == ".pdf" else Path(file.filename).suffix.lower().lstrip("."),
+            "loading_method": loading_method if os.path.splitext(file.filename)[1].lower() == ".pdf" else os.path.splitext(file.filename)[1].lower().lstrip("."),
             "original_file_size": len(content),
             "processing_date": datetime.now().isoformat(),
             "chunking_method": chunking_option,
@@ -536,7 +535,7 @@ async def parse_file(
         # Prepare metadata
         metadata = {
             "filename": file.filename,
-            "loading_method": loading_method if Path(file.filename).suffix.lower() == ".pdf" else Path(file.filename).suffix.lower().lstrip("."),
+            "loading_method": loading_method if os.path.splitext(file.filename)[1].lower() == ".pdf" else os.path.splitext(file.filename)[1].lower().lstrip("."),
             "original_file_size": len(content),
             "processing_date": datetime.now().isoformat(),
             "parsing_method": parsing_option,
@@ -584,7 +583,7 @@ async def load_file(
             "filename": file.filename,
             "total_chunks": 0,  # 将在后面更新
             "total_pages": 0,   # 将在后面更新
-            "loading_method": loading_method if Path(file.filename).suffix.lower() == ".pdf" else Path(file.filename).suffix.lower().lstrip("."),
+            "loading_method": loading_method if os.path.splitext(file.filename)[1].lower() == ".pdf" else os.path.splitext(file.filename)[1].lower().lstrip("."),
             "loading_strategy": strategy,  
             "chunking_strategy": chunking_strategy, 
             "timestamp": datetime.now().isoformat()
@@ -696,7 +695,7 @@ async def chunk_document(data: ChunkRequest):
         
         # 生成输出文件名
         timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-        base_name = Path(doc_data['filename']).stem.split('_')[0]
+        base_name = os.path.splitext(doc_data['filename'])[0].split('_')[0]
         output_filename = f"{base_name}_{chunking_option}_{timestamp}.json"
         
         output_path = os.path.join("01-chunked-docs", output_filename)
@@ -804,13 +803,13 @@ async def evaluate_search(
         }
         
         # 保存结果
-        output_dir = Path("06-evaluation-result")
-        output_dir.mkdir(exist_ok=True)
+        output_dir = "06-evaluation-result"
+        os.makedirs(output_dir, exist_ok=True)
         
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
         # 保存详细的JSON结果
-        output_path = output_dir / f"evaluation_results_{timestamp}.json"
+        output_path = os.path.join(output_dir, f"evaluation_results_{timestamp}.json")
         evaluation_results = {
             "results": results,
             "average_scores": average_scores,
@@ -837,7 +836,7 @@ async def evaluate_search(
         existing_columns = [col for col in column_order if col in results_df.columns]
         results_df = results_df[existing_columns]
         
-        csv_path = output_dir / f"evaluation_results_{timestamp}.csv"
+        csv_path = os.path.join(output_dir, f"evaluation_results_{timestamp}.csv")
         results_df.to_csv(csv_path, index=False)
         
         return evaluation_results
@@ -1041,7 +1040,7 @@ async def import_to_course(
     temp_path = os.path.join("temp", file.filename)
     try:
         filename = file.filename
-        suffix = Path(filename).suffix.lower()
+        suffix = os.path.splitext(filename)[1].lower()
         is_json = suffix in {".json", ".jsonl"}
 
         with open(temp_path, "wb") as buffer:

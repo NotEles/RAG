@@ -505,8 +505,8 @@ class VectorStoreService:
             filename = embeddings_data.get("filename", "doc")
             id_prefix = re.sub(r'[^a-zA-Z0-9]', '_', filename) + f"_{timestamp}_"
 
-            entity_num = 0
-            for emb in embeddings_data["embeddings"]:
+            all_ids, all_embeddings, all_documents, all_metadatas = [], [], [], []
+            for entity_num, emb in enumerate(embeddings_data["embeddings"]):
                 metadata = {
                     "document_name": filename,
                     "total_chunks": int(emb["metadata"].get("total_chunks", 0)),
@@ -524,14 +524,20 @@ class VectorStoreService:
                 if "heading_hierarchy" in emb["metadata"] and emb["metadata"]["heading_hierarchy"]:
                     metadata["heading_hierarchy"] = str(emb["metadata"]["heading_hierarchy"])
                 unique_id = id_prefix + str(int(emb["metadata"].get("chunk_id", entity_num)))
-                collection.add(
-                    documents=[str(emb["metadata"].get("content", ""))],
-                    metadatas=[metadata],
-                    embeddings=[[float(x) for x in emb.get("embedding", [])]],
-                    ids=[unique_id],
-                )
-                entity_num += 1
+                all_ids.append(unique_id)
+                all_embeddings.append([float(x) for x in emb.get("embedding", [])])
+                all_documents.append(str(emb["metadata"].get("content", "")))
+                all_metadatas.append(metadata)
 
+            # chromadb 0.5.x: batch add avoids single-item validation bugs
+            collection.add(
+                documents=all_documents,
+                metadatas=all_metadatas,
+                embeddings=all_embeddings,
+                ids=all_ids,
+            )
+
+            entity_num = len(all_ids)
             logger.info(f"Added {entity_num} vectors to collection '{collection_name}'")
             return {"index_size": entity_num, "collection_name": collection_name}
 
@@ -560,7 +566,8 @@ class VectorStoreService:
 
         if provider == VectorDBProvider.CHROMA:
             collections = self.client.list_collections()
-            return collections
+            # chromadb 0.5.x returns Collection objects; extract names for compatibility
+            return [c.name if hasattr(c, 'name') else c for c in collections]
 
         return []
 

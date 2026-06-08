@@ -1,0 +1,93 @@
+{
+  "query": "人工智能如何学习",
+  "timestamp": "2026-06-08T10:11:11.911798",
+  "provider": "deepseek",
+  "model": "deepseek-v3",
+  "task_type": "qa",
+  "generation_params": {
+    "temperature": 0.3,
+    "top_p": 0.9,
+    "max_tokens": 1024
+  },
+  "response": "人工智能通过机器学习技术从数据中自动学习。具体来说，它依赖算法从海量数据中提取统计模式和规律，构建模型以对未知数据进行预测或决策，整个过程是数据驱动而非规则驱动的 [1][2]。其核心是通过最小化经验风险或结构风险来优化模型参数，理论基础包括统计学习理论、最优化方法和概率图模型等 [1]。",
+  "context": [
+    {
+      "text": "问题：什么是机器学习？\n回答：机器学习是人工智能的核心分支领域，它研究如何设计算法使计算机系统能够从海量数据中自动学习并提取有用的统计模式和规律，从而在面对全新样本时进行准确的预测、分类或决策。其本质是通过最小化经验风险或结构风险实现模型参数优化，不依赖人工显式编写固定规则，而是让模型从样本中归纳出可泛化的知识，理论基础涵盖统计学习理论、最优化方法和概率图模型等。",
+      "score": 0.6780114126666262,
+      "metadata": {
+        "source": "course_qa (1).json",
+        "page": "1",
+        "chunk": "course_qa__1__json_20260608100344538975_123",
+        "total_chunks": 360,
+        "page_range": "1",
+        "word_count": 170,
+        "embedding_provider": "huggingface",
+        "embedding_model": "BAAI/bge-small-zh-v1.5",
+        "embedding_timestamp": "2026-06-08T10:03:43.574693",
+        "parent_id": null,
+        "heading_hierarchy": null,
+        "retrieval_score": 0.7157713770866394,
+        "original_score": 0.7157713770866394,
+        "final_score": 0.6780114126666262,
+        "candidate_rank": 1,
+        "expanded_from_child": false,
+        "postprocess_reason": "deduplicate+rerank+context_pack",
+        "rerank_score": 0.6654247578599551,
+        "packed_tokens": 210,
+        "context_index": 1
+      }
+    },
+    {
+      "text": "问题：什么是机器学习？\n回答：机器学习让计算机系统从训练数据中自动发现规律和模式，构建模型以对未知数据进行预测或决策，是人工智能中通过数据驱动而非规则驱动的重要方法。",
+      "score": 0.6502336915900717,
+      "metadata": {
+        "source": "course_qa (1).json",
+        "page": "1",
+        "chunk": "course_qa__1__json_20260608100344538975_122",
+        "total_chunks": 360,
+        "page_range": "1",
+        "word_count": 76,
+        "embedding_provider": "huggingface",
+        "embedding_model": "BAAI/bge-small-zh-v1.5",
+        "embedding_timestamp": "2026-06-08T10:03:43.569185",
+        "parent_id": null,
+        "heading_hierarchy": null,
+        "retrieval_score": 0.6836831569671631,
+        "original_score": 0.6836831569671631,
+        "final_score": 0.6502336915900717,
+        "candidate_rank": 2,
+        "expanded_from_child": false,
+        "postprocess_reason": "deduplicate+rerank+context_pack",
+        "rerank_score": 0.6390838697977079,
+        "packed_tokens": 88,
+        "context_index": 2
+      }
+    },
+    {
+      "text": "问题：什么是机器学习？\n回答：机器学习是通过数据训练模型，让模型学会从输入到输出的映射关系，用于处理新数据。",
+      "score": 0.5606609411385123,
+      "metadata": {
+        "source": "course_qa (1).json",
+        "page": "1",
+        "chunk": "course_qa__1__json_20260608100344538975_121",
+        "total_chunks": 360,
+        "page_range": "1",
+        "word_count": 47,
+        "embedding_provider": "huggingface",
+        "embedding_model": "BAAI/bge-small-zh-v1.5",
+        "embedding_timestamp": "2026-06-08T10:03:43.565191",
+        "parent_id": null,
+        "heading_hierarchy": null,
+        "retrieval_score": 0.60129714012146,
+        "original_score": 0.60129714012146,
+        "final_score": 0.5606609411385123,
+        "candidate_rank": 3,
+        "expanded_from_child": false,
+        "postprocess_reason": "deduplicate+rerank+context_pack",
+        "rerank_score": 0.5471155414775297,
+        "packed_tokens": 55,
+        "context_index": 3
+      }
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "query": "西方现代主义文学的考核方式是什么",
+  "timestamp": "2026-06-08T10:27:58.889140",
+  "provider": "deepseek",
+  "model": "deepseek-v3",
+  "task_type": "qa",
+  "generation_params": {
+    "temperature": 0.3,
+    "top_p": 0.9,
+    "max_tokens": 1024
+  },
+  "response": "西方现代主义文学的考核方式包括平时成绩和期末闭卷笔试两部分。\n\n**平时成绩**由三次任务构成：\n- 第一次：提交1篇文学作品阅读随笔（1-2千字）\n- 第二次：提交1篇学术文献阅读随笔（1-2千字）\n- 两次随笔均需与西方现代主义文学相关，独立完成，严禁抄袭或代写，并于第12周前以Word文档形式（文档名“姓名+学号+平时作业”）发送至classtu20252@126.com邮箱 [1]。\n- 第三次：约第10或11周进行45分钟随堂闭卷笔试 [1]。\n\n**期末考核**为闭卷笔试，考试时间2小时，暂定于第12周周三晚上原授课时间举行 [1]。",
+  "context": [
+    {
+      "text": "西方现代主义文学课程（2025）考核方式\n前两次平时成绩\n第一次：文学作品阅读随笔1篇（精选），每篇1-2千字。\n第二次：学术文献阅读随笔1篇（精选），每篇1-2千字。\n基本要求：以上所有随笔，均应与西方现代主义文学相关，但不限课堂讲授的作家作品。作业必须独立完成，严禁抄袭、人机代写等行为。\n提交方式：2篇阅读随笔于第12周之内，提交到classtu20252@126.com邮箱。均以Word文档形式提交电子版，放在一个文档中，以“姓名+学号+平时作业”为文档名。\n第三次平时成绩\n临近结课时（约第10或11周）组织一次45分钟的随堂闭卷笔试。\n期末考核\n采取闭卷笔试方式，考试时间2小时，暂定于第12周周三晚上原授课时间举行。",
+      "score": 0.7423290739480966,
+      "metadata": {
+        "source": "西方现代主义文学（2025）考试方式.docx",
+        "page": "1",
+        "chunk": "_________2025______docx_20260608102648542768_1",
+        "total_chunks": 1,
+        "page_range": "1",
+        "word_count": 242,
+        "embedding_provider": "huggingface",
+        "embedding_model": "BAAI/bge-small-zh-v1.5",
+        "embedding_timestamp": "2026-06-08T10:26:48.532247",
+        "parent_id": null,
+        "heading_hierarchy": null,
+        "retrieval_score": 0.776460352441492,
+        "original_score": 0.776460352441492,
+        "final_score": 0.7423290739480966,
+        "candidate_rank": 1,
+        "expanded_from_child": false,
+        "postprocess_reason": "deduplicate+rerank+context_pack",
+        "rerank_score": 0.7309519811169647,
+        "packed_tokens": 327,
+        "context_index": 1
+      }
+    }
+  ]
+}

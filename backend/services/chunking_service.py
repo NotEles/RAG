@@ -1,14 +1,9 @@
 from datetime import datetime
 import logging
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharacterTextSplitter
 from utils.model_utils import get_huggingface_model_path
 from pathlib import Path
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from llama_index.core.node_parser import SemanticSplitterNodeParser
-from llama_index.core.schema import Document as LlamaDocument
-from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 import uuid
-from langchain.text_splitter import MarkdownHeaderTextSplitter
 
 _BGE_MODEL_PATH = str(Path(__file__).parent.parent / "models" / "bge-small-zh-v1.5")
 

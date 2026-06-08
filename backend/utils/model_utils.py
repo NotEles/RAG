@@ -52,11 +52,26 @@ def get_huggingface_model_path(model_name: str) -> str:
                 logger.info(f"Using local model (Hub cache dir): {hub_cache_path}")
                 return hub_cache_path
 
-    # 4. 项目内置 backend/models/{model_folder}
+    # 4. 项目内置 backend/models/{model_folder}（直接放置格式）
     default_path = _LOCAL_MODELS_DIR / model_folder
     if default_path.exists():
         logger.info(f"Using local model: {default_path}")
         return str(default_path)
+
+    # 4b. 项目内置 backend/models/models--{org}--{model}（Hub 缓存格式）
+    if "/" in model_name:
+        hub_cache_name = "models--" + model_name.replace("/", "--")
+        hub_cache_path = _LOCAL_MODELS_DIR / hub_cache_name
+        if hub_cache_path.exists():
+            snapshots_dir = hub_cache_path / "snapshots"
+            if snapshots_dir.exists():
+                snapshots = sorted(os.listdir(str(snapshots_dir)))
+                if snapshots:
+                    snapshot_path = str(snapshots_dir / snapshots[0])
+                    logger.info(f"Using local model (Hub cache): {snapshot_path}")
+                    return snapshot_path
+            logger.info(f"Using local model (Hub cache dir): {hub_cache_path}")
+            return str(hub_cache_path)
 
     # 5. 远程加载
     logger.info(f"Using remote model: {model_name}")

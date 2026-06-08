@@ -1,6 +1,7 @@
 from pypdf import PdfReader
 import pdfplumber
 import fitz  # PyMuPDF
+from pathlib import Path
 import logging
 import os
 from datetime import datetime

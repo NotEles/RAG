@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import PostprocessTrace from '../components/PostprocessTrace';
 import { apiBaseUrl as API_BASE_URL } from '../config/config';
 
 const PROVIDERS = [
@@ -11,6 +12,12 @@ const PROVIDERS = [
 ];
 
 const MODELS = {
+  ollama: [
+    { value: 'qwen2.5:3b', label: 'Qwen2.5 3B（Ollama 本地）' },
+    { value: 'qwen2.5:1.5b', label: 'Qwen2.5 1.5B（Ollama 本地，快速）' },
+    { value: 'zephyr:latest', label: 'Zephyr（Ollama 本地）' },
+    { value: 'gpt-oss:20b', label: 'GPT OSS 20B（Ollama 本地）' },
+  ],
   deepseek: [
     { value: 'deepseek-v3', label: 'DeepSeek V3' },
     { value: 'deepseek-r1', label: 'DeepSeek R1（含推理）' },
@@ -28,6 +35,48 @@ const MODELS = {
     { value: 'Qwen3-0.6B', label: 'Qwen3 0.6B（本地）' },
   ],
 };
+
+const POST_PRESETS = {
+  local_quality: {
+    label: '质量优先',
+    strategies: ['deduplicate', 'rerank', 'compress', 'context_pack'],
+    rerankMethod: 'llm',
+    compressMethod: 'llm',
+    fetchK: 20,
+    rerankTopK: 5,
+    llmCompressTopN: 2,
+    maxContextChars: 8000,
+    maxContextTokens: 3000,
+  },
+  speed: {
+    label: '速度优先',
+    strategies: ['deduplicate', 'rerank', 'context_pack'],
+    rerankMethod: 'cross_encoder',
+    compressMethod: 'extractive',
+    fetchK: 12,
+    rerankTopK: 5,
+    llmCompressTopN: 2,
+    maxContextChars: 8000,
+    maxContextTokens: 3000,
+  },
+  offline: {
+    label: '本地离线',
+    strategies: ['deduplicate', 'rerank', 'compress', 'context_pack'],
+    rerankMethod: 'cross_encoder',
+    compressMethod: 'extractive',
+    fetchK: 16,
+    rerankTopK: 5,
+    llmCompressTopN: 2,
+    maxContextChars: 8000,
+    maxContextTokens: 3000,
+  },
+};
+const POST_LLM_PROVIDERS = [
+  { value: 'ollama', label: 'Ollama 本地' },
+  { value: 'deepseek', label: 'DeepSeek' },
+  { value: 'openai', label: 'OpenAI' },
+  { value: 'aliyun', label: '阿里云百炼' },
+];
 
 export default function QA() {
   const [provider, setProvider] = useState('deepseek');
@@ -54,6 +103,44 @@ export default function QA() {
   const [rewriteProvider, setRewriteProvider] = useState('deepseek');
   const [rewriteModel, setRewriteModel] = useState('deepseek-v3');
   const [showQueryOpt, setShowQueryOpt] = useState(false);          // 折叠/展开
+
+  // ── 检索后优化 ──
+  const [postprocessEnabled, setPostprocessEnabled] = useState(true);
+  const [postPreset, setPostPreset] = useState('speed');
+  const [postStrategies, setPostStrategies] = useState(['deduplicate', 'rerank', 'context_pack']);
+  const [showPostOpt, setShowPostOpt] = useState(false);
+  const [postprocessFetchK, setPostprocessFetchK] = useState(12);
+  const [rerankTopK, setRerankTopK] = useState(5);
+  const [rerankMethod, setRerankMethod] = useState('cross_encoder');
+  const [rerankModel, setRerankModel] = useState('BAAI/bge-reranker-base');
+  const [compressMethod, setCompressMethod] = useState('extractive');
+  const [maxContextChars, setMaxContextChars] = useState(8000);
+  const [maxContextTokens, setMaxContextTokens] = useState(3000);
+  const [mmrLambda, setMmrLambda] = useState(0.7);
+  const [postLlmProvider, setPostLlmProvider] = useState('ollama');
+  const [postLlmModel, setPostLlmModel] = useState('qwen2.5:3b');
+  const [postLlmApiKey, setPostLlmApiKey] = useState('');
+  const [llmCompressTopN, setLlmCompressTopN] = useState(2);
+  const [postprocessTrace, setPostprocessTrace] = useState([]);
+
+  const applyPostPreset = (presetKey) => {
+    const preset = POST_PRESETS[presetKey];
+    if (!preset) return;
+    setPostPreset(presetKey);
+    setPostprocessEnabled(true);
+    setPostStrategies(preset.strategies);
+    setRerankMethod(preset.rerankMethod);
+    setCompressMethod(preset.compressMethod);
+    setPostprocessFetchK(preset.fetchK);
+    setRerankTopK(preset.rerankTopK);
+    setLlmCompressTopN(preset.llmCompressTopN);
+    setMaxContextChars(preset.maxContextChars);
+    setMaxContextTokens(preset.maxContextTokens);
+    if (preset.rerankMethod === 'llm' || preset.compressMethod === 'llm') {
+      setPostLlmProvider('ollama');
+      setPostLlmModel('qwen2.5:3b');
+    }
+  };
 
   useEffect(() => {
     setModel(MODELS[provider][0].value);
@@ -108,12 +195,19 @@ export default function QA() {
     );
   };
 
+  const togglePostStrategy = (value) => {
+    setPostStrategies((prev) =>
+      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
+    );
+  };
+
   const handleAsk = async () => {
     if (!query.trim()) return;
     setLoading(true);
     setError('');
     setSearchResults([]);
     setResponse('');
+    setPostprocessTrace([]);
     setActiveTab('response');
 
     try {
@@ -134,6 +228,24 @@ export default function QA() {
           query_strategies: queryStrategies,
           rewrite_model_provider: rewriteProvider,
           rewrite_model_name: rewriteModel,
+          postprocess_enabled: postprocessEnabled,
+          postprocess_strategies: postStrategies,
+          postprocess_fetch_k: postprocessFetchK,
+          rerank_method: rerankMethod,
+          rerank_model: rerankModel,
+          rerank_top_k: rerankTopK,
+          compress_method: postStrategies.includes('compress') ? compressMethod : 'none',
+          max_context_chars: maxContextChars,
+          max_context_tokens: maxContextTokens,
+          mmr_lambda: mmrLambda,
+          postprocess_llm_provider: postLlmProvider,
+          postprocess_llm_model: postLlmModel,
+          postprocess_api_key: postLlmProvider === 'ollama' ? null : postLlmApiKey || null,
+          llm_compress_top_n: llmCompressTopN,
+          candidate_threshold: postprocessEnabled ? Math.max(0, threshold - 0.2) : null,
+          final_threshold: postprocessEnabled ? threshold : null,
+          allow_drop_irrelevant: false,
+          postprocess_trace_enabled: true,
         }),
       });
 
@@ -143,6 +255,7 @@ export default function QA() {
       }
 
       const data = await res.json();
+      setPostprocessTrace(data.postprocess_trace || []);
       setSearchResults(data.search_results || []);
       setResponse(data.response || '');
       if ((data.search_results || []).length === 0) {
@@ -365,7 +478,7 @@ export default function QA() {
                       onChange={(e) => { setRewriteProvider(e.target.value); setRewriteModel(MODELS[e.target.value]?.[0]?.value || ''); }}
                       className="w-full border rounded px-2 py-1.5 text-xs bg-white"
                     >
-                      {PROVIDERS.filter(p => p.value !== 'huggingface').map(p => (
+                      {POST_LLM_PROVIDERS.map(p => (
                         <option key={p.value} value={p.value}>{p.label}</option>
                       ))}
                     </select>
@@ -380,6 +493,210 @@ export default function QA() {
                     </select>
                   </div>
                 )}
+              </div>
+            )}
+          </div>
+
+          {/* Post Retrieval Optimization */}
+          <div className="bg-white rounded-lg shadow p-4 space-y-3">
+            <button
+              onClick={() => setShowPostOpt(!showPostOpt)}
+              className="w-full flex items-center justify-between font-semibold text-gray-700"
+            >
+              <span>检索后优化</span>
+              <span className={`text-xs ${postprocessEnabled ? 'text-blue-500' : 'text-gray-400'}`}>
+                {postprocessEnabled ? `已开启 ${postStrategies.length} 项` : '关闭'}
+              </span>
+            </button>
+            {!showPostOpt && postprocessEnabled && (
+              <p className="text-xs text-gray-400">
+                已开启：{postStrategies.join('、')}
+              </p>
+            )}
+            {showPostOpt && (
+              <div className="space-y-3 pt-1">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={postprocessEnabled}
+                    onChange={(e) => setPostprocessEnabled(e.target.checked)}
+                    className="accent-blue-500"
+                  />
+                  <span className="text-sm text-gray-600">启用检索后优化</span>
+                </label>
+                <div>
+                  <label className="text-xs text-gray-500">优化预设</label>
+                  <select
+                    value={postPreset}
+                    onChange={(e) => applyPostPreset(e.target.value)}
+                    className="mt-1 w-full border rounded px-2 py-1 text-xs bg-white"
+                  >
+                    {Object.entries(POST_PRESETS).map(([key, preset]) => (
+                      <option key={key} value={key}>{preset.label}</option>
+                    ))}
+                  </select>
+                </div>
+                {[
+                  ['deduplicate', '去重'],
+                  ['rerank', '重排'],
+                  ['compress', '抽取式压缩'],
+                  ['diversify', '来源多样性'],
+                  ['context_pack', '上下文打包'],
+                ].map(([value, label]) => (
+                  <label
+                    key={value}
+                    className={`flex items-center gap-2 p-2 rounded border cursor-pointer text-sm ${
+                      postStrategies.includes(value) ? 'border-blue-300 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={postStrategies.includes(value)}
+                      onChange={() => togglePostStrategy(value)}
+                      className="accent-blue-500"
+                    />
+                    {label}
+                  </label>
+                ))}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-xs text-gray-500">候选数</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={50}
+                      value={postprocessFetchK}
+                      onChange={(e) => setPostprocessFetchK(Number(e.target.value))}
+                      className="mt-1 w-full border rounded px-2 py-1 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500">重排后</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={rerankTopK}
+                      onChange={(e) => setRerankTopK(Number(e.target.value))}
+                      className="mt-1 w-full border rounded px-2 py-1 text-xs"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500">重排方式</label>
+                  <select
+                    value={rerankMethod}
+                    onChange={(e) => setRerankMethod(e.target.value)}
+                    className="mt-1 w-full border rounded px-2 py-1 text-xs bg-white"
+                  >
+                    <option value="cross_encoder">本地 CrossEncoder</option>
+                    <option value="llm">LLM 重排</option>
+                  </select>
+                </div>
+                {rerankMethod === 'cross_encoder' && (
+                  <div>
+                    <label className="text-xs text-gray-500">重排模型</label>
+                    <input
+                      value={rerankModel}
+                      onChange={(e) => setRerankModel(e.target.value)}
+                      className="mt-1 w-full border rounded px-2 py-1 text-xs font-mono"
+                    />
+                  </div>
+                )}
+                <div>
+                  <label className="text-xs text-gray-500">压缩方式</label>
+                  <select
+                    value={compressMethod}
+                    onChange={(e) => setCompressMethod(e.target.value)}
+                    className="mt-1 w-full border rounded px-2 py-1 text-xs bg-white"
+                  >
+                    <option value="extractive">抽取式压缩</option>
+                    <option value="llm">LLM 压缩</option>
+                  </select>
+                </div>
+                {(rerankMethod === 'llm' || compressMethod === 'llm') && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <select
+                      value={postLlmProvider}
+                      onChange={(e) => {
+                        setPostLlmProvider(e.target.value);
+                        setPostLlmModel(MODELS[e.target.value]?.[0]?.value || '');
+                      }}
+                      className="w-full border rounded px-2 py-1 text-xs bg-white"
+                    >
+                      {POST_LLM_PROVIDERS.map(p => (
+                        <option key={p.value} value={p.value}>{p.label}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={postLlmModel}
+                      onChange={(e) => setPostLlmModel(e.target.value)}
+                      className="w-full border rounded px-2 py-1 text-xs bg-white"
+                    >
+                      {(MODELS[postLlmProvider] || []).map(m => (
+                        <option key={m.value} value={m.value}>{m.label}</option>
+                      ))}
+                    </select>
+                    {postLlmProvider !== 'ollama' && (
+                      <input
+                        type="password"
+                        value={postLlmApiKey}
+                        onChange={(e) => setPostLlmApiKey(e.target.value)}
+                        placeholder="后处理 API Key，可留空使用环境变量"
+                        className="col-span-2 w-full border rounded px-2 py-1 text-xs"
+                      />
+                    )}
+                    {compressMethod === 'llm' && (
+                      <label className="col-span-2 block text-xs text-gray-500">
+                        LLM 压缩前 N 条
+                        <input
+                          type="number"
+                          min={0}
+                          max={20}
+                          value={llmCompressTopN}
+                          onChange={(e) => setLlmCompressTopN(parseInt(e.target.value) || 0)}
+                          className="mt-1 w-full border rounded px-2 py-1 text-xs"
+                        />
+                      </label>
+                    )}
+                  </div>
+                )}
+                <div>
+                  <label className="text-xs text-gray-500">MMR 相关性权重: {mmrLambda.toFixed(2)}</label>
+                  <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    value={mmrLambda}
+                    onChange={(e) => setMmrLambda(Number(e.target.value))}
+                    className="w-full mt-1 accent-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500">字符预算: {maxContextChars}</label>
+                  <input
+                    type="range"
+                    min={1000}
+                    max={20000}
+                    step={1000}
+                    value={maxContextChars}
+                    onChange={(e) => setMaxContextChars(Number(e.target.value))}
+                    className="w-full mt-1 accent-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500">Token 预算: {maxContextTokens}</label>
+                  <input
+                    type="range"
+                    min={500}
+                    max={12000}
+                    step={500}
+                    value={maxContextTokens}
+                    onChange={(e) => setMaxContextTokens(Number(e.target.value))}
+                    className="w-full mt-1 accent-blue-500"
+                  />
+                </div>
               </div>
             )}
           </div>
@@ -445,6 +762,18 @@ export default function QA() {
                 </span>
               )}
             </button>
+            {postprocessTrace.length > 0 && (
+              <button
+                onClick={() => setActiveTab('trace')}
+                className={`px-4 py-2 text-sm rounded-t font-medium transition-colors ${
+                  activeTab === 'trace'
+                    ? 'bg-white text-blue-600 shadow'
+                    : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
+                }`}
+              >
+                优化 Trace
+              </button>
+            )}
           </div>
 
           <div className="flex-1 bg-white rounded-lg shadow p-5 overflow-y-auto min-h-0">
@@ -487,24 +816,55 @@ export default function QA() {
                               <span className="ml-1 text-gray-400">第 {result.metadata.page} 页</span>
                             )}
                           </span>
-                          <span
-                            className={`text-xs font-mono px-2 py-0.5 rounded-full ${
-                              result.score >= 0.8
-                                ? 'bg-green-100 text-green-700'
-                                : result.score >= 0.6
-                                ? 'bg-yellow-100 text-yellow-700'
-                                : 'bg-gray-100 text-gray-600'
-                            }`}
-                          >
-                            {(result.score * 100).toFixed(1)}%
-                          </span>
+                          <div className="flex items-center gap-1">
+                            {result.metadata?.rerank_score != null && (
+                              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700">
+                                R {(result.metadata.rerank_score * 100).toFixed(1)}%
+                              </span>
+                            )}
+                            <span
+                              className={`text-xs font-mono px-2 py-0.5 rounded-full ${
+                                result.score >= 0.8
+                                  ? 'bg-green-100 text-green-700'
+                                  : result.score >= 0.6
+                                  ? 'bg-yellow-100 text-yellow-700'
+                                  : 'bg-gray-100 text-gray-600'
+                              }`}
+                            >
+                              {(result.score * 100).toFixed(1)}%
+                            </span>
+                          </div>
                         </div>
+                        {result.metadata?.postprocess_reason && (
+                          <div className="mb-2 flex flex-wrap gap-1 text-[10px] text-gray-500">
+                            <span className="px-1.5 py-0.5 rounded bg-gray-100">{result.metadata.postprocess_reason}</span>
+                            {result.metadata?.original_score != null && (
+                              <span className="px-1.5 py-0.5 rounded bg-gray-100">
+                                原始 {(result.metadata.original_score * 100).toFixed(1)}%
+                              </span>
+                            )}
+                            {result.metadata?.compressed && (
+                              <span className="px-1.5 py-0.5 rounded bg-gray-100">
+                                压缩 {result.metadata.original_length}→{result.metadata.compressed_length}
+                              </span>
+                            )}
+                            {result.metadata?.packed_tokens != null && (
+                              <span className="px-1.5 py-0.5 rounded bg-gray-100">
+                                {result.metadata.packed_tokens} tokens
+                              </span>
+                            )}
+                          </div>
+                        )}
                         <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{result.text}</p>
                       </div>
                     ))}
                   </div>
                 )}
               </>
+            )}
+
+            {!loading && activeTab === 'trace' && (
+              <PostprocessTrace trace={postprocessTrace} />
             )}
           </div>
         </div>

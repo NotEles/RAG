@@ -360,8 +360,7 @@ class PromptService:
             TaskType.CREATIVE: ("创意写作", "发散思维，多角度方案"),
         }
         result = [{"value": "auto", "label": "自动识别", "description": "系统根据问题内容自动选择最优任务类型"}]
-        for tt in TaskType:
-            label, desc = labels[tt]
+        for tt, (label, desc) in labels.items():
             result.append({
                 "value": tt.value,
                 "label": label,

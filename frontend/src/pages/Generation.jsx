@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import RandomImage from '../components/RandomImage';
+import PostprocessTrace from '../components/PostprocessTrace';
 import { apiBaseUrl } from '../config/config';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -13,6 +14,45 @@ const MarkdownViewer = ({ markdownText }) => {
   );
 };
 
+const POST_LLM_MODELS = {
+  ollama: ['qwen2.5:3b', 'qwen2.5:1.5b', 'zephyr:latest', 'gpt-oss:20b'],
+  deepseek: ['deepseek-v3', 'deepseek-r1'],
+  openai: ['gpt-4o-mini', 'gpt-4o'],
+  aliyun: ['qwen-turbo', 'qwen-plus'],
+};
+
+const POST_PRESETS = {
+  local_quality: {
+    label: '质量优先',
+    strategies: ['deduplicate', 'rerank', 'compress', 'context_pack'],
+    rerankMethod: 'llm',
+    compressMethod: 'llm',
+    rerankTopK: 5,
+    llmCompressTopN: 2,
+    maxContextChars: 8000,
+    maxContextTokens: 3000,
+  },
+  speed: {
+    label: '速度优先',
+    strategies: ['deduplicate', 'rerank', 'context_pack'],
+    rerankMethod: 'cross_encoder',
+    compressMethod: 'extractive',
+    rerankTopK: 5,
+    llmCompressTopN: 2,
+    maxContextChars: 8000,
+    maxContextTokens: 3000,
+  },
+  offline: {
+    label: '本地离线',
+    strategies: ['deduplicate', 'rerank', 'compress', 'context_pack'],
+    rerankMethod: 'cross_encoder',
+    compressMethod: 'extractive',
+    rerankTopK: 5,
+    llmCompressTopN: 2,
+    maxContextChars: 8000,
+    maxContextTokens: 3000,
+  },
+};
 
 const Generation = () => {
   const location = useLocation();
@@ -31,6 +71,43 @@ const Generation = () => {
   const [loadModel, setLoadModel] = useState(false);
   const [taskType, setTaskType] = useState('auto');
   const [taskTypes, setTaskTypes] = useState([]);
+  const [postprocessEnabled, setPostprocessEnabled] = useState(false);
+  const [postPreset, setPostPreset] = useState('local_quality');
+  const [postStrategies, setPostStrategies] = useState(['deduplicate', 'rerank', 'compress', 'context_pack']);
+  const [showPostOpt, setShowPostOpt] = useState(false);
+  const [rerankMethod, setRerankMethod] = useState('llm');
+  const [rerankModel, setRerankModel] = useState('BAAI/bge-reranker-base');
+  const [rerankTopK, setRerankTopK] = useState(5);
+  const [compressMethod, setCompressMethod] = useState('llm');
+  const [maxContextChars, setMaxContextChars] = useState(8000);
+  const [maxContextTokens, setMaxContextTokens] = useState(3000);
+  const [mmrLambda, setMmrLambda] = useState(0.7);
+  const [postLlmProvider, setPostLlmProvider] = useState('ollama');
+  const [postLlmModel, setPostLlmModel] = useState('qwen2.5:3b');
+  const [postLlmApiKey, setPostLlmApiKey] = useState('');
+  const [llmCompressTopN, setLlmCompressTopN] = useState(2);
+  const [forcePostprocess, setForcePostprocess] = useState(false);
+  const [postprocessTrace, setPostprocessTrace] = useState([]);
+  const applyPostPreset = (presetKey) => {
+    const preset = POST_PRESETS[presetKey];
+    if (!preset) return;
+    setPostPreset(presetKey);
+    setPostprocessEnabled(true);
+    setPostStrategies(preset.strategies);
+    setRerankMethod(preset.rerankMethod);
+    setCompressMethod(preset.compressMethod);
+    setRerankTopK(preset.rerankTopK);
+    setLlmCompressTopN(preset.llmCompressTopN);
+    setMaxContextChars(preset.maxContextChars);
+    setMaxContextTokens(preset.maxContextTokens);
+    if (preset.rerankMethod === 'llm' || preset.compressMethod === 'llm') {
+      setPostLlmProvider('ollama');
+      setPostLlmModel('qwen2.5:3b');
+    }
+  };
+  const hasPostProcessedResults = searchResults.some(result => result.metadata?.postprocess_reason);
+  const allPostProcessedResults = searchResults.length > 0 && searchResults.every(result => result.metadata?.postprocess_reason);
+  const shouldPostprocess = postprocessEnabled && (forcePostprocess || !allPostProcessedResults);
 
   // 加载可用模型列表和搜索结果文件列表
   useEffect(() => {
@@ -65,16 +142,24 @@ const Generation = () => {
       if (!selectedFile) {
         setQuery('');
         setSearchResults([]);
+        setPostprocessTrace([]);
         return;
       }
 
+      setPostprocessTrace([]);
       try {
         const response = await fetch(`${apiBaseUrl}/search-results/${selectedFile}`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const data = await response.json();
-        setQuery(data.query);
-        setSearchResults(data.results);
+        setQuery(data.query || '');
+        setSearchResults(Array.isArray(data.results) ? data.results : []);
+        setPostprocessTrace(data.postprocess_trace || []);
       } catch (error) {
         console.error('Error loading search results:', error);
+        setSearchResults([]);
+        setPostprocessTrace([]);
         setStatus('加载搜索结果失败');
       }
     };
@@ -85,9 +170,15 @@ const Generation = () => {
   // 如果从搜索页面跳转过来，获取搜索结果
   useEffect(() => {
     if (location.state) {
-      const { query: searchQuery, results } = location.state;
+      const {
+        query: searchQuery,
+        results,
+        postprocess_trace: trace,
+        postprocessTrace: postprocessTraceFromState,
+      } = location.state;
       if (searchQuery) setQuery(searchQuery);
       if (results) setSearchResults(results);
+      setPostprocessTrace(trace || postprocessTraceFromState || []);
     }
   }, [location]);
 
@@ -104,6 +195,7 @@ const Generation = () => {
 
     setIsGenerating(true);
     setStatus('');
+    setPostprocessTrace([]);
     try {
       const response = await fetch(`${apiBaseUrl}/generate`, {
         method: 'POST',
@@ -119,6 +211,22 @@ const Generation = () => {
           api_key: apiKey || null,
           show_reasoning: showReasoning,
           task_type: taskType === 'auto' ? null : taskType,
+          postprocess_enabled: shouldPostprocess,
+          postprocess_strategies: postStrategies,
+          rerank_method: rerankMethod,
+          rerank_model: rerankModel,
+          rerank_top_k: rerankTopK,
+          compress_method: postStrategies.includes('compress') ? compressMethod : 'none',
+          max_context_chars: maxContextChars,
+          max_context_tokens: maxContextTokens,
+          mmr_lambda: mmrLambda,
+          postprocess_llm_provider: postLlmProvider,
+          postprocess_llm_model: postLlmModel,
+          postprocess_api_key: postLlmProvider === 'ollama' ? null : postLlmApiKey || null,
+          llm_compress_top_n: llmCompressTopN,
+          final_threshold: null,
+          allow_drop_irrelevant: false,
+          postprocess_trace_enabled: true,
         }),
       });
 
@@ -128,6 +236,10 @@ const Generation = () => {
 
       const data = await response.json();
       setResponse(data.response);
+      setPostprocessTrace(data.postprocess_trace || []);
+      if (data.search_results) {
+        setSearchResults(data.search_results);
+      }
       setLoadModel(false);
       const detectedTask = data.detected_task || taskType;
       setStatus(`生成完成！任务类型: ${detectedTask} 结果已保存至: ${data.saved_filepath}`);
@@ -264,6 +376,202 @@ const Generation = () => {
                     </div>
                   )}
 
+                  <div className="border-t pt-3">
+                    <button
+                      onClick={() => setShowPostOpt(!showPostOpt)}
+                      className="w-full flex items-center justify-between text-sm font-medium text-gray-700"
+                    >
+                      <span>检索后优化</span>
+                      <span className={`text-xs ${shouldPostprocess ? 'text-blue-500' : 'text-gray-400'}`}>
+                        {allPostProcessedResults && !forcePostprocess ? '已优化，跳过重复处理' : postprocessEnabled ? `已开启 ${postStrategies.length} 项` : '关闭'}
+                      </span>
+                    </button>
+                    {showPostOpt && (
+                      <div className="mt-2 space-y-2">
+                        <label className="flex items-center gap-2 text-xs cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={postprocessEnabled}
+                            onChange={(e) => setPostprocessEnabled(e.target.checked)}
+                            className="accent-green-500"
+                          />
+                          启用检索后优化
+                        </label>
+                        <label className="block text-xs text-gray-500">
+                          优化预设
+                          <select
+                            value={postPreset}
+                            onChange={(e) => applyPostPreset(e.target.value)}
+                            className="mt-1 w-full border rounded px-1.5 py-1 text-xs bg-white"
+                          >
+                            {Object.entries(POST_PRESETS).map(([key, preset]) => (
+                              <option key={key} value={key}>{preset.label}</option>
+                            ))}
+                          </select>
+                        </label>
+                        {hasPostProcessedResults && (
+                          <label className="flex items-center gap-2 text-xs cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={forcePostprocess}
+                              onChange={(e) => setForcePostprocess(e.target.checked)}
+                              className="accent-green-500"
+                            />
+                            重新优化已有后处理结果
+                          </label>
+                        )}
+                        {[
+                          ['deduplicate', '去重'],
+                          ['rerank', '重排'],
+                          ['compress', '压缩'],
+                          ['diversify', 'MMR 多样性'],
+                          ['context_pack', 'Token 打包'],
+                        ].map(([value, label]) => (
+                          <label
+                            key={value}
+                            className={`flex items-center gap-2 p-1.5 rounded text-xs cursor-pointer ${
+                              postStrategies.includes(value) ? 'bg-green-50 text-green-700' : 'text-gray-600'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={postStrategies.includes(value)}
+                              onChange={() => setPostStrategies(prev =>
+                                prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]
+                              )}
+                              className="accent-green-500"
+                            />
+                            {label}
+                          </label>
+                        ))}
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            type="number"
+                            min="1"
+                            max="20"
+                            value={rerankTopK}
+                            onChange={(e) => setRerankTopK(parseInt(e.target.value) || 1)}
+                            className="w-full border rounded px-1.5 py-1 text-xs"
+                            title="重排后数量"
+                          />
+                          <label className="block text-xs text-gray-500">
+                            重排方式
+                            <select
+                              value={rerankMethod}
+                              onChange={(e) => setRerankMethod(e.target.value)}
+                              className="mt-1 w-full border rounded px-1.5 py-1 text-xs bg-white"
+                            >
+                              <option value="cross_encoder">本地重排</option>
+                              <option value="llm">LLM 重排</option>
+                            </select>
+                          </label>
+                        </div>
+                        {rerankMethod === 'cross_encoder' && (
+                          <input
+                            value={rerankModel}
+                            onChange={(e) => setRerankModel(e.target.value)}
+                            className="w-full border rounded px-1.5 py-1 text-xs font-mono"
+                          />
+                        )}
+                        <label className="block text-xs text-gray-500">
+                          压缩方式
+                          <select
+                            value={compressMethod}
+                            onChange={(e) => setCompressMethod(e.target.value)}
+                            className="mt-1 w-full border rounded px-1.5 py-1 text-xs bg-white"
+                          >
+                            <option value="extractive">抽取式压缩</option>
+                            <option value="llm">LLM 压缩</option>
+                          </select>
+                        </label>
+                        {(rerankMethod === 'llm' || compressMethod === 'llm') && (
+                          <div className="grid grid-cols-2 gap-2">
+                            <select
+                              value={postLlmProvider}
+                              onChange={(e) => {
+                                setPostLlmProvider(e.target.value);
+                                setPostLlmModel(POST_LLM_MODELS[e.target.value][0]);
+                              }}
+                              className="w-full border rounded px-1.5 py-1 text-xs bg-white"
+                            >
+                              <option value="ollama">Ollama 本地</option>
+                              <option value="deepseek">DeepSeek</option>
+                              <option value="openai">OpenAI</option>
+                              <option value="aliyun">阿里云百炼</option>
+                            </select>
+                            <select
+                              value={postLlmModel}
+                              onChange={(e) => setPostLlmModel(e.target.value)}
+                              className="w-full border rounded px-1.5 py-1 text-xs bg-white"
+                            >
+                              {POST_LLM_MODELS[postLlmProvider].map(m => (
+                                <option key={m} value={m}>{m}</option>
+                              ))}
+                            </select>
+                            {postLlmProvider !== 'ollama' && (
+                              <input
+                                type="password"
+                                value={postLlmApiKey}
+                                onChange={(e) => setPostLlmApiKey(e.target.value)}
+                                placeholder="后处理 API Key，可留空使用环境变量"
+                                className="col-span-2 w-full border rounded px-1.5 py-1 text-xs"
+                              />
+                            )}
+                            {compressMethod === 'llm' && (
+                              <label className="col-span-2 block text-xs text-gray-500">
+                                LLM 压缩前 N 条
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="20"
+                                  value={llmCompressTopN}
+                                  onChange={(e) => setLlmCompressTopN(parseInt(e.target.value) || 0)}
+                                  className="mt-1 w-full border rounded px-1.5 py-1 text-xs"
+                                />
+                              </label>
+                            )}
+                          </div>
+                        )}
+                        <label className="block text-xs text-gray-500">
+                          MMR 相关性权重: {mmrLambda.toFixed(2)}
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            value={mmrLambda}
+                            onChange={(e) => setMmrLambda(parseFloat(e.target.value))}
+                            className="block w-full"
+                          />
+                        </label>
+                        <label className="block text-xs text-gray-500">
+                          字符预算: {maxContextChars}
+                          <input
+                            type="range"
+                            min="1000"
+                            max="20000"
+                            step="1000"
+                            value={maxContextChars}
+                            onChange={(e) => setMaxContextChars(parseInt(e.target.value))}
+                            className="block w-full"
+                          />
+                        </label>
+                        <label className="block text-xs text-gray-500">
+                          Token 预算: {maxContextTokens}
+                          <input
+                            type="range"
+                            min="500"
+                            max="12000"
+                            step="500"
+                            value={maxContextTokens}
+                            onChange={(e) => setMaxContextTokens(parseInt(e.target.value))}
+                            className="block w-full"
+                          />
+                        </label>
+                      </div>
+                    )}
+                  </div>
+
                   <button
                     onClick={handleGenerate}
                     disabled={isGenerating}
@@ -287,6 +595,7 @@ const Generation = () => {
 
         {/* Right Panel - Context and Response */}
         <div className="col-span-8">
+          <PostprocessTrace trace={postprocessTrace} />
           {selectedFile ? (
             <>
               {/* Search Results Context */}
@@ -304,6 +613,21 @@ const Generation = () => {
                           <div>Page: {result.metadata.page}</div>
                         </div>
                       </div>
+                      {result.metadata?.postprocess_reason && (
+                        <div className="mb-2 flex flex-wrap gap-1 text-xs text-gray-500">
+                          <span className="px-1.5 py-0.5 rounded bg-white border">{result.metadata.postprocess_reason}</span>
+                          {result.metadata?.rerank_score != null && (
+                            <span className="px-1.5 py-0.5 rounded bg-white border">
+                              Rerank {(result.metadata.rerank_score * 100).toFixed(1)}%
+                            </span>
+                          )}
+                          {result.metadata?.packed_tokens != null && (
+                            <span className="px-1.5 py-0.5 rounded bg-white border">
+                              {result.metadata.packed_tokens} tokens
+                            </span>
+                          )}
+                        </div>
+                      )}
                       <p className="text-sm whitespace-pre-wrap">{result.text}</p>
                     </div>
                   ))}
@@ -330,4 +654,4 @@ const Generation = () => {
   );
 };
 
-export default Generation; 
+export default Generation;

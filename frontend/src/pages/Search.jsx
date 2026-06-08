@@ -1,7 +1,65 @@
 // src/pages/Search.jsx
 import React, { useState, useEffect } from 'react';
 import RandomImage from '../components/RandomImage';
+import PostprocessTrace from '../components/PostprocessTrace';
 import { apiBaseUrl } from '../config/config';
+
+const POST_LLM_MODELS = {
+  ollama: [
+    { value: 'qwen2.5:3b', label: 'Qwen2.5 3B（Ollama 本地）' },
+    { value: 'qwen2.5:1.5b', label: 'Qwen2.5 1.5B（Ollama 本地，快速）' },
+    { value: 'zephyr:latest', label: 'Zephyr（Ollama 本地）' },
+    { value: 'gpt-oss:20b', label: 'GPT OSS 20B（Ollama 本地）' },
+  ],
+  deepseek: [
+    { value: 'deepseek-v3', label: 'DeepSeek V3' },
+    { value: 'deepseek-r1', label: 'DeepSeek R1' },
+  ],
+  openai: [
+    { value: 'gpt-4o-mini', label: 'GPT-4o mini' },
+    { value: 'gpt-4o', label: 'GPT-4o' },
+  ],
+  aliyun: [
+    { value: 'qwen-turbo', label: 'Qwen Turbo' },
+    { value: 'qwen-plus', label: 'Qwen Plus' },
+  ],
+};
+
+const POST_PRESETS = {
+  local_quality: {
+    label: '质量优先',
+    strategies: ['deduplicate', 'rerank', 'compress', 'context_pack'],
+    rerankMethod: 'llm',
+    compressMethod: 'llm',
+    fetchK: 20,
+    rerankTopK: 5,
+    llmCompressTopN: 2,
+    maxContextChars: 8000,
+    maxContextTokens: 3000,
+  },
+  speed: {
+    label: '速度优先',
+    strategies: ['deduplicate', 'rerank', 'context_pack'],
+    rerankMethod: 'cross_encoder',
+    compressMethod: 'extractive',
+    fetchK: 12,
+    rerankTopK: 5,
+    llmCompressTopN: 2,
+    maxContextChars: 8000,
+    maxContextTokens: 3000,
+  },
+  offline: {
+    label: '本地离线',
+    strategies: ['deduplicate', 'rerank', 'compress', 'context_pack'],
+    rerankMethod: 'cross_encoder',
+    compressMethod: 'extractive',
+    fetchK: 16,
+    rerankTopK: 5,
+    llmCompressTopN: 2,
+    maxContextChars: 8000,
+    maxContextTokens: 3000,
+  },
+};
 
 const Search = () => {
   const [query, setQuery] = useState('');
@@ -23,6 +81,44 @@ const Search = () => {
   const [rewriteProvider, setRewriteProvider] = useState('deepseek');
   const [rewriteModel, setRewriteModel] = useState('deepseek-v3');
   const [showQueryOpt, setShowQueryOpt] = useState(false);
+
+  // ── 检索后优化 ──
+  const [postprocessEnabled, setPostprocessEnabled] = useState(true);
+  const [postPreset, setPostPreset] = useState('speed');
+  const [postStrategies, setPostStrategies] = useState(['deduplicate', 'rerank', 'context_pack']);
+  const [showPostOpt, setShowPostOpt] = useState(false);
+  const [postprocessFetchK, setPostprocessFetchK] = useState(12);
+  const [rerankTopK, setRerankTopK] = useState(5);
+  const [rerankMethod, setRerankMethod] = useState('cross_encoder');
+  const [rerankModel, setRerankModel] = useState('BAAI/bge-reranker-base');
+  const [compressMethod, setCompressMethod] = useState('extractive');
+  const [maxContextChars, setMaxContextChars] = useState(8000);
+  const [maxContextTokens, setMaxContextTokens] = useState(3000);
+  const [mmrLambda, setMmrLambda] = useState(0.7);
+  const [postLlmProvider, setPostLlmProvider] = useState('ollama');
+  const [postLlmModel, setPostLlmModel] = useState('qwen2.5:3b');
+  const [postLlmApiKey, setPostLlmApiKey] = useState('');
+  const [llmCompressTopN, setLlmCompressTopN] = useState(2);
+  const [postprocessTrace, setPostprocessTrace] = useState([]);
+
+  const applyPostPreset = (presetKey) => {
+    const preset = POST_PRESETS[presetKey];
+    if (!preset) return;
+    setPostPreset(presetKey);
+    setPostprocessEnabled(true);
+    setPostStrategies(preset.strategies);
+    setRerankMethod(preset.rerankMethod);
+    setCompressMethod(preset.compressMethod);
+    setPostprocessFetchK(preset.fetchK);
+    setRerankTopK(preset.rerankTopK);
+    setLlmCompressTopN(preset.llmCompressTopN);
+    setMaxContextChars(preset.maxContextChars);
+    setMaxContextTokens(preset.maxContextTokens);
+    if (preset.rerankMethod === 'llm' || preset.compressMethod === 'llm') {
+      setPostLlmProvider('ollama');
+      setPostLlmModel('qwen2.5:3b');
+    }
+  };
 
   // 加载向量数据库providers和collections
   useEffect(() => {
@@ -62,6 +158,7 @@ const Search = () => {
 
     setIsSearching(true);
     setStatus('');
+    setPostprocessTrace([]);
     try {
       const searchParams = {
         query,
@@ -73,6 +170,24 @@ const Search = () => {
         query_strategies: queryStrategies,
         rewrite_model_provider: rewriteProvider,
         rewrite_model_name: rewriteModel,
+        postprocess_enabled: postprocessEnabled,
+        postprocess_strategies: postStrategies,
+        postprocess_fetch_k: postprocessFetchK,
+        rerank_method: rerankMethod,
+        rerank_model: rerankModel,
+        rerank_top_k: rerankTopK,
+        compress_method: postStrategies.includes('compress') ? compressMethod : 'none',
+        max_context_chars: maxContextChars,
+        max_context_tokens: maxContextTokens,
+        mmr_lambda: mmrLambda,
+        postprocess_llm_provider: postLlmProvider,
+        postprocess_llm_model: postLlmModel,
+        postprocess_api_key: postLlmProvider === 'ollama' ? null : postLlmApiKey || null,
+        llm_compress_top_n: llmCompressTopN,
+        candidate_threshold: postprocessEnabled ? Math.max(0, threshold - 0.2) : null,
+        final_threshold: postprocessEnabled ? threshold : null,
+        allow_drop_irrelevant: false,
+        postprocess_trace_enabled: true,
       };
       
       console.log('发送搜索请求:', searchParams);
@@ -91,9 +206,11 @@ const Search = () => {
 
       const data = await response.json();
       console.log('搜索响应:', data);
+      setPostprocessTrace(data.postprocess_trace || []);
 
-      if (data.results && data.results.results && data.results.results.length > 0) {
-        setResults(data.results.results);
+      const responseResults = Array.isArray(data.results) ? data.results : data.results?.results;
+      if (responseResults && responseResults.length > 0) {
+        setResults(responseResults);
         if (saveResults && data.saved_filepath) {
           setStatus(`搜索完成！结果已保存至: ${data.saved_filepath}`);
         } else {
@@ -123,7 +240,8 @@ const Search = () => {
       const saveParams = {
         query,
         collection_id: collection,
-        results: results
+        results: results,
+        postprocess_trace: postprocessTrace,
       };
 
       console.log('发送保存请求:', saveParams);
@@ -331,6 +449,201 @@ const Search = () => {
                 )}
               </div>
 
+              {/* ── 检索后优化 ── */}
+              <div className="border-t pt-3 mt-2">
+                <button
+                  onClick={() => setShowPostOpt(!showPostOpt)}
+                  className="w-full flex items-center justify-between text-sm font-medium text-gray-700"
+                >
+                  <span>检索后优化</span>
+                  <span className={`text-xs ${postprocessEnabled ? 'text-blue-500' : 'text-gray-400'}`}>
+                    {postprocessEnabled ? `已开启 ${postStrategies.length} 项` : '关闭'}
+                  </span>
+                </button>
+                {showPostOpt && (
+                  <div className="mt-2 space-y-2">
+                    <label className="flex items-center gap-2 text-xs cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={postprocessEnabled}
+                        onChange={(e) => setPostprocessEnabled(e.target.checked)}
+                        className="accent-blue-500"
+                      />
+                      启用检索后优化
+                    </label>
+                    <label className="block text-xs text-gray-500">
+                      优化预设
+                      <select
+                        value={postPreset}
+                        onChange={(e) => applyPostPreset(e.target.value)}
+                        className="mt-1 w-full border rounded px-1.5 py-1 text-xs bg-white"
+                      >
+                        {Object.entries(POST_PRESETS).map(([key, preset]) => (
+                          <option key={key} value={key}>{preset.label}</option>
+                        ))}
+                      </select>
+                    </label>
+                    {[
+                      ['deduplicate', '去重'],
+                      ['rerank', '重排'],
+                      ['compress', '压缩'],
+                      ['diversify', '多样性'],
+                      ['context_pack', '打包'],
+                    ].map(([value, label]) => (
+                      <label
+                        key={value}
+                        className={`flex items-center gap-2 p-1.5 rounded text-xs cursor-pointer ${
+                          postStrategies.includes(value) ? 'bg-blue-50 text-blue-700' : 'text-gray-600'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={postStrategies.includes(value)}
+                          onChange={() => setPostStrategies(prev =>
+                            prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]
+                          )}
+                          className="accent-blue-500"
+                        />
+                        {label}
+                      </label>
+                    ))}
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="number"
+                        min="1"
+                        max="50"
+                        value={postprocessFetchK}
+                        onChange={(e) => setPostprocessFetchK(parseInt(e.target.value) || 1)}
+                        className="w-full border rounded px-1.5 py-1 text-xs"
+                        title="候选数"
+                      />
+                      <input
+                        type="number"
+                        min="1"
+                        max="20"
+                        value={rerankTopK}
+                        onChange={(e) => setRerankTopK(parseInt(e.target.value) || 1)}
+                        className="w-full border rounded px-1.5 py-1 text-xs"
+                        title="重排后数量"
+                      />
+                    </div>
+                    <label className="block text-xs text-gray-500">
+                      重排方式
+                      <select
+                        value={rerankMethod}
+                        onChange={(e) => setRerankMethod(e.target.value)}
+                        className="mt-1 w-full border rounded px-1.5 py-1 text-xs bg-white"
+                      >
+                        <option value="cross_encoder">本地 CrossEncoder 重排</option>
+                        <option value="llm">LLM 重排</option>
+                      </select>
+                    </label>
+                    {rerankMethod === 'cross_encoder' && (
+                      <input
+                        value={rerankModel}
+                        onChange={(e) => setRerankModel(e.target.value)}
+                        className="w-full border rounded px-1.5 py-1 text-xs font-mono"
+                      />
+                    )}
+                    <label className="block text-xs text-gray-500">
+                      压缩方式
+                      <select
+                        value={compressMethod}
+                        onChange={(e) => setCompressMethod(e.target.value)}
+                        className="mt-1 w-full border rounded px-1.5 py-1 text-xs bg-white"
+                      >
+                        <option value="extractive">抽取式压缩</option>
+                        <option value="llm">LLM 压缩</option>
+                      </select>
+                    </label>
+                    {(rerankMethod === 'llm' || compressMethod === 'llm') && (
+                      <div className="grid grid-cols-2 gap-2">
+                        <select
+                          value={postLlmProvider}
+                          onChange={(e) => {
+                            setPostLlmProvider(e.target.value);
+                            setPostLlmModel(POST_LLM_MODELS[e.target.value][0].value);
+                          }}
+                          className="w-full border rounded px-1.5 py-1 text-xs bg-white"
+                        >
+                          <option value="ollama">Ollama 本地</option>
+                          <option value="deepseek">DeepSeek</option>
+                          <option value="openai">OpenAI</option>
+                          <option value="aliyun">阿里云百炼</option>
+                        </select>
+                        <select
+                          value={postLlmModel}
+                          onChange={(e) => setPostLlmModel(e.target.value)}
+                          className="w-full border rounded px-1.5 py-1 text-xs bg-white"
+                        >
+                          {(POST_LLM_MODELS[postLlmProvider] || []).map(m => (
+                            <option key={m.value} value={m.value}>{m.label}</option>
+                          ))}
+                        </select>
+                        {postLlmProvider !== 'ollama' && (
+                          <input
+                            type="password"
+                            value={postLlmApiKey}
+                            onChange={(e) => setPostLlmApiKey(e.target.value)}
+                            placeholder="后处理 API Key，可留空使用环境变量"
+                            className="col-span-2 w-full border rounded px-1.5 py-1 text-xs"
+                          />
+                        )}
+                        {compressMethod === 'llm' && (
+                          <label className="col-span-2 block text-xs text-gray-500">
+                            LLM 压缩前 N 条
+                            <input
+                              type="number"
+                              min="0"
+                              max="20"
+                              value={llmCompressTopN}
+                              onChange={(e) => setLlmCompressTopN(parseInt(e.target.value) || 0)}
+                              className="mt-1 w-full border rounded px-1.5 py-1 text-xs"
+                            />
+                          </label>
+                        )}
+                      </div>
+                    )}
+                    <label className="block text-xs text-gray-500">
+                      MMR 相关性权重: {mmrLambda.toFixed(2)}
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        value={mmrLambda}
+                        onChange={(e) => setMmrLambda(parseFloat(e.target.value))}
+                        className="block w-full"
+                      />
+                    </label>
+                    <label className="block text-xs text-gray-500">
+                      字符预算: {maxContextChars}
+                      <input
+                        type="range"
+                        min="1000"
+                        max="20000"
+                        step="1000"
+                        value={maxContextChars}
+                        onChange={(e) => setMaxContextChars(parseInt(e.target.value))}
+                        className="block w-full"
+                      />
+                    </label>
+                    <label className="block text-xs text-gray-500">
+                      Token 预算: {maxContextTokens}
+                      <input
+                        type="range"
+                        min="500"
+                        max="12000"
+                        step="500"
+                        value={maxContextTokens}
+                        onChange={(e) => setMaxContextTokens(parseInt(e.target.value))}
+                        className="block w-full"
+                      />
+                    </label>
+                  </div>
+                )}
+              </div>
+
               <button
                 onClick={() => {
                   console.log('Search clicked with saveResults:', saveResults);
@@ -355,6 +668,11 @@ const Search = () => {
 
         {/* Right Panel - Results */}
         <div className="col-span-9 border rounded-lg bg-white shadow-sm">
+          {postprocessTrace.length > 0 && (
+            <div className="p-4 pb-0">
+              <PostprocessTrace trace={postprocessTrace} />
+            </div>
+          )}
           {results.length > 0 ? (
             <div className="p-4">
               <div className="flex justify-between items-center mb-4">
@@ -379,6 +697,31 @@ const Search = () => {
                         <div>Chunk: {result.metadata.chunk}</div>
                       </div>
                     </div>
+                    {result.metadata?.postprocess_reason && (
+                      <div className="mb-2 flex flex-wrap gap-1 text-xs text-gray-500">
+                        <span className="px-1.5 py-0.5 rounded bg-white border">{result.metadata.postprocess_reason}</span>
+                        {result.metadata?.original_score != null && (
+                          <span className="px-1.5 py-0.5 rounded bg-white border">
+                            Original {(result.metadata.original_score * 100).toFixed(1)}%
+                          </span>
+                        )}
+                        {result.metadata?.rerank_score != null && (
+                          <span className="px-1.5 py-0.5 rounded bg-white border">
+                            Rerank {(result.metadata.rerank_score * 100).toFixed(1)}%
+                          </span>
+                        )}
+                        {result.metadata?.compressed && (
+                          <span className="px-1.5 py-0.5 rounded bg-white border">
+                            Compressed {result.metadata.original_length}→{result.metadata.compressed_length}
+                          </span>
+                        )}
+                        {result.metadata?.packed_tokens != null && (
+                          <span className="px-1.5 py-0.5 rounded bg-white border">
+                            {result.metadata.packed_tokens} tokens
+                          </span>
+                        )}
+                      </div>
+                    )}
                     <p className="text-sm whitespace-pre-wrap">{result.text}</p>
                   </div>
                 ))}

@@ -17,7 +17,7 @@ class ParsingService:
     - 文本和表格混合解析
     """
 
-    def parse_pdf(self, text: str, method: str, metadata: dict, page_map: list = None) -> dict:
+    def parse_document(self, text: str, method: str, metadata: dict, page_map: list = None) -> dict:
         """
         使用指定方法解析PDF文档
 
@@ -65,8 +65,12 @@ class ParsingService:
             return document_data
             
         except Exception as e:
-            logger.error(f"Error in parse_pdf: {str(e)}")
+            logger.error(f"Error in parse_document: {str(e)}")
             raise
+
+    def parse_pdf(self, text: str, method: str, metadata: dict, page_map: list = None) -> dict:
+        """Backward-compatible wrapper for older PDF-only call sites."""
+        return self.parse_document(text, method, metadata, page_map=page_map)
 
     def _parse_all_text(self, page_map: list) -> list:
         """

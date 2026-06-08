@@ -72,14 +72,14 @@ async def process_file(
         # 准备元数据
         metadata = {
             "filename": file.filename,
-            "loading_method": loading_method,
+            "loading_method": loading_method if Path(file.filename).suffix.lower() == ".pdf" else Path(file.filename).suffix.lower().lstrip("."),
             "original_file_size": len(content),
             "processing_date": datetime.now().isoformat(),
             "chunking_method": chunking_option,
         }
         
         loading_service = LoadingService()
-        raw_text = loading_service.load_pdf(temp_path, loading_method)
+        raw_text = loading_service.load_document(temp_path, loading_method)
         metadata["total_pages"] = loading_service.get_total_pages()
         
         page_map = loading_service.get_page_map()
@@ -536,20 +536,20 @@ async def parse_file(
         # Prepare metadata
         metadata = {
             "filename": file.filename,
-            "loading_method": loading_method,
+            "loading_method": loading_method if Path(file.filename).suffix.lower() == ".pdf" else Path(file.filename).suffix.lower().lstrip("."),
             "original_file_size": len(content),
             "processing_date": datetime.now().isoformat(),
             "parsing_method": parsing_option,
         }
         
         loading_service = LoadingService()
-        raw_text = loading_service.load_pdf(temp_path, loading_method)
+        raw_text = loading_service.load_document(temp_path, loading_method)
         metadata["total_pages"] = loading_service.get_total_pages()
         
         page_map = loading_service.get_page_map()
         
         parsing_service = ParsingService()
-        parsed_content = parsing_service.parse_pdf(
+        parsed_content = parsing_service.parse_document(
             raw_text, 
             parsing_option, 
             metadata,
@@ -584,7 +584,7 @@ async def load_file(
             "filename": file.filename,
             "total_chunks": 0,  # 将在后面更新
             "total_pages": 0,   # 将在后面更新
-            "loading_method": loading_method,
+            "loading_method": loading_method if Path(file.filename).suffix.lower() == ".pdf" else Path(file.filename).suffix.lower().lstrip("."),
             "loading_strategy": strategy,  
             "chunking_strategy": chunking_strategy, 
             "timestamp": datetime.now().isoformat()
@@ -597,7 +597,7 @@ async def load_file(
         
         # 使用 LoadingService 加载文档
         loading_service = LoadingService()
-        raw_text = loading_service.load_pdf(
+        raw_text = loading_service.load_document(
             temp_path, 
             loading_method, 
             strategy=strategy,
@@ -631,7 +631,7 @@ async def load_file(
             filename=file.filename,
             chunks=chunks,
             metadata=metadata,
-            loading_method=loading_method,
+            loading_method=metadata["loading_method"],
             strategy=strategy,
             chunking_strategy=chunking_strategy,
         )
@@ -696,7 +696,7 @@ async def chunk_document(data: ChunkRequest):
         
         # 生成输出文件名
         timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-        base_name = doc_data['filename'].replace('.pdf', '').split('_')[0]
+        base_name = Path(doc_data['filename']).stem.split('_')[0]
         output_filename = f"{base_name}_{chunking_option}_{timestamp}.json"
         
         output_path = os.path.join("01-chunked-docs", output_filename)
@@ -1028,25 +1028,28 @@ def _is_qa_format(json_data) -> bool:
 async def import_to_course(
     file: UploadFile = File(...),
     loading_method: str = Form("pymupdf"),
-    chunking_method: str = Form("by_pages"),
+    chunking_method: str = Form("by_pages"),     # <--- 可以把默认改成 parent_child 试试效果
     chunk_size: int = Form(1000),
+    parent_chunk_size: int = Form(1000),         # <--- 新增
+    child_chunk_size: int = Form(200),           # <--- 新增
     embedding_provider: str = Form("huggingface"),
     embedding_model: str = Form("BAAI/bge-small-zh-v1.5"),
     api_key: Optional[str] = Form(None),
     min_quality: int = Form(0),
 ):
-    """Import a PDF or JSON file directly into the 'course' Chroma collection."""
+    """Import a supported document directly into the 'course' Chroma collection."""
     temp_path = os.path.join("temp", file.filename)
     try:
         filename = file.filename
-        is_json = filename.lower().endswith('.json')
-        is_pdf = filename.lower().endswith('.pdf')
+        suffix = Path(filename).suffix.lower()
+        is_json = suffix in {".json", ".jsonl"}
 
         with open(temp_path, "wb") as buffer:
             content = await file.read()
             buffer.write(content)
 
         chunks = []
+        actual_loading_method = loading_method if suffix == ".pdf" else suffix.lstrip(".")
 
         if is_json:
             with open(temp_path, 'r', encoding='utf-8') as f:
@@ -1066,6 +1069,7 @@ async def import_to_course(
                     meta.setdefault("page_range", str(idx + 1))
                     meta.setdefault("word_count", len(chunk.get("content", "").split()))
                 chunks = raw_chunks
+                actual_loading_method = "json"
 
             # Case 2: QA 问答格式 → 每条 (问题, 答案) 生成一个 chunk
             elif _is_qa_format(json_data):
@@ -1073,6 +1077,7 @@ async def import_to_course(
                     json_data, source_filename=filename, min_quality=min_quality
                 )
                 chunks = chunk_result.get("chunks", [])
+                actual_loading_method = "json"
 
             # Case 3: 其他任意 JSON → 提取条目 → page_map → ChunkingService
             else:
@@ -1092,23 +1097,25 @@ async def import_to_course(
                         "total_pages": len(page_map),
                     },
                     page_map=page_map, chunk_size=chunk_size,
+                    parent_chunk_size=parent_chunk_size,   # <--- 新增
+                    child_chunk_size=child_chunk_size      # <--- 新增
                 )
                 chunks = chunk_result.get("chunks", [])
 
-        elif is_pdf:
+        else:
             loading_service = LoadingService()
-            loading_service.load_pdf(temp_path, loading_method)
+            loading_service.load_document(temp_path, loading_method)
             total_pages = loading_service.get_total_pages()
             page_map = loading_service.get_page_map()
-            metadata = {"filename": filename, "loading_method": loading_method, "total_pages": total_pages}
+            metadata = {"filename": filename, "loading_method": actual_loading_method, "total_pages": total_pages}
             chunking_service = ChunkingService()
             chunk_result = chunking_service.chunk_text(
                 text="", method=chunking_method, metadata=metadata,
-                page_map=page_map, chunk_size=chunk_size
+                page_map=page_map, chunk_size=chunk_size,
+                parent_chunk_size=parent_chunk_size,       # <--- 新增
+                child_chunk_size=child_chunk_size          # <--- 新增
             )
             chunks = chunk_result.get("chunks", [])
-        else:
-            raise HTTPException(status_code=400, detail="Unsupported file type. Please upload PDF or JSON.")
 
         if not chunks:
             raise HTTPException(status_code=400, detail="No chunks extracted from file.")
@@ -1124,7 +1131,7 @@ async def import_to_course(
                 "filename": filename,
                 "total_chunks": len(chunks),
                 "total_pages": len(chunks),
-                "loading_method": loading_method if is_pdf else "json",
+                "loading_method": actual_loading_method,
                 "chunking_method": chunking_method,
             }
         }
@@ -1140,6 +1147,7 @@ async def import_to_course(
 
         vector_store_service = VectorStoreService()
         result = vector_store_service.add_to_named_collection(embeddings_data, "course")
+        collection_info = vector_store_service.get_collection_info("chroma", "course")
 
         os.remove(temp_path)
         return {
@@ -1148,6 +1156,7 @@ async def import_to_course(
             "chunks_imported": len(chunks),
             "collection": "course",
             "filename": filename,
+            "collection_info": collection_info,
         }
 
     except HTTPException:

@@ -460,6 +460,14 @@ class VectorStoreService:
                     "embedding_timestamp": str(emb["metadata"].get("embedding_timestamp", "")),
                     "index_mode": str(config._get_chroma_index_type()),
                 }
+                # ======== 新增：将父块内容和结构化层级安全写入 ChromaDB ========
+                if "parent_id" in emb["metadata"] and emb["metadata"]["parent_id"]:
+                    metadata["parent_id"] = str(emb["metadata"]["parent_id"])
+                if "parent_content" in emb["metadata"] and emb["metadata"]["parent_content"]:
+                    metadata["parent_content"] = str(emb["metadata"]["parent_content"])
+                if "heading_hierarchy" in emb["metadata"] and emb["metadata"]["heading_hierarchy"]:
+                    metadata["heading_hierarchy"] = str(emb["metadata"]["heading_hierarchy"])
+                # ===============================================================
                 entities.append(metadata)
                 collection.add(
                     documents=[str(emb["metadata"].get("content", ""))],
@@ -610,10 +618,13 @@ class VectorStoreService:
                 schema = {}
                 if count > 0:
                     try:
-                        full_data = collection.get(limit=1)
+                        full_data = collection.get(limit=min(count, 1000))
                         metadatas = full_data.get('metadatas') or []
                         if isinstance(metadatas, list) and metadatas:
-                            raw = metadatas[0]
+                            raw = max(
+                                metadatas,
+                                key=lambda item: str(item.get("embedding_timestamp", "")) if isinstance(item, dict) else ""
+                            )
                             # 过滤掉 list 类型的字段（旧版 bug 遗留的 vector 数组）
                             schema = {k: v for k, v in raw.items() if not isinstance(v, list)}
                     except Exception as e:
